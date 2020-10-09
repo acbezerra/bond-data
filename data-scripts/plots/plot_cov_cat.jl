@@ -38,7 +38,7 @@ x_axis_title=" "
 width_step=18
 legend_title="Secondary Market"
 spacing=4.5
-height=400
+height=350
 save_plt=true
 plt_type = "cov_cat"
 file_ext="png"
@@ -75,9 +75,9 @@ push!(pl, p)
 ## Issuer Percentage Count by Secondary Market
 y_var="perc_sbm_total"
 y_axis_title="% of Total Non-MTN Bonds Traded by Secondary Market"
-title=[string("Number of Issuers by Covenant Category as Percentage of Total ",
-              "Number of Issuers of Non-MTN-Bonds"),
-       "Traded by Secondary Bond Market"]
+title=["Number of Issuers by Covenant Category as Percentage of Total",
+              string("Number of Issuers of Non-MTN-Bonds ",
+                     "Traded by Secondary Bond Market")]
 if :period in Symbol.(names(tt))
     title[end] = string(title[end], " - ", tt[1, :period])
 end

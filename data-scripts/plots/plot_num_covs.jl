@@ -184,6 +184,34 @@ include(string(scripts_path, "/", "single_vega_plt_script.jl"))
 push!(pl, p)
 # }}}
 # }}}
+# Trades {{{1
+stats_var=:count
+df = PlotMod.prepare_num_cov_plot(snc; stat=stats_var)
+
+# Trade Count {{{2
+color_scale="viridis"
+
+cond = .&(df[:, :sbm] .!= :any, df[:, :rt] .== :any)
+tt = df[cond, :]
+
+x_var="sbm:n"
+x_var_type="nominal"
+legend_title="Secondary Market"
+
+y_var="value"
+y_axis_title="Number of Issuers"
+title=["Number of Issuers of Non-MTN-Bonds Traded",
+        " by Number of Covenant Categories per Bond"]
+if :period in Symbol.(names(tt))
+    title[end] = string(title[end], " - ", tt[1, :period])
+end
+
+include(string(scripts_path, "/", "single_vega_plt_script.jl"))
+push!(pl, p)
+
+
+#}}}
+#}}}
 # Bonds {{{1
 stats_var=:bonds
 df = PlotMod.prepare_num_cov_plot(snc; stat=stats_var)

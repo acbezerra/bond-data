@@ -199,7 +199,7 @@ function sbm_vega_plt(df::DataFrame, col_var::String,
                       legend_title::String=" ", 
                       color_scale::String="viridis",
                       spacing::Float64=10.,
-                      width::Int64=300,
+                      # width::Int64=300,
                       width_step::Int64=0,
                       height=240, 
                       title::Array{String, 1}=[" "], 
@@ -216,7 +216,7 @@ function sbm_vega_plt(df::DataFrame, col_var::String,
                       plt_dir::String="",
                       file_ext::String="eps")
 
-    plt_width = width_step > 0 ? @vlfrag(step=width_step) : width
+    # plt_width = width_step > 0 ? @vlfrag(step=width_step) : width
 
     p = df |> @vlplot(:bar,
                       column={col_var, type=col_var_type, 
@@ -235,7 +235,7 @@ function sbm_vega_plt(df::DataFrame, col_var::String,
                              fontSize=title_font_size, 
                              offset=title_offset},
                       spacing=spacing,
-                      width=plt_width,
+                      width={step=width_step},
                       height=height
                     ) 
 
@@ -270,7 +270,7 @@ function dual_vega_plt(df::DataFrame, col_var::String,
                       legend_title::String=" ", 
                       color_scale::String="viridis",
                       spacing::Float64=10.,
-                      width::Int64=300,
+                      # width::Int64=300,
                       width_step::Int64=0,
                       height=240, 
                       title::Array{String, 1}=[" "], 
@@ -287,7 +287,7 @@ function dual_vega_plt(df::DataFrame, col_var::String,
                       plt_dir::String="",
                       file_ext::String="eps")
 
-    plt_width = width_step > 0 ? @vlfrag(step=width_step) : width
+    # plt_width = width_step > 0 ? @vlfrag(step=width_step) : width
 
     p = df |> @vlplot(:bar,
                   column={col_var, type=col_var_type, 
@@ -307,7 +307,7 @@ function dual_vega_plt(df::DataFrame, col_var::String,
                          fontSize=title_font_size, 
                          offset=title_offset},
                   spacing=spacing,
-                  width=plt_width,
+                  width={step=width_step},
                   height=height
                 ) 
     
