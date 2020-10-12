@@ -31,7 +31,7 @@ x_axis_title=" "
 width_step=18
 legend_title="Secondary Market"
 spacing=4.5
-height=400
+height=350
 save_plt=true
 plt_type = "num_cov"
 file_ext="png"
@@ -134,9 +134,9 @@ x_var="rt:n"
 x_var_type="nominal"
 legend_title="Rating"
 # cal_formula = string("datum.sbm2 == 'ats'  ? 'ATS' : 'OTC'")
-height=250
+#height=250
 row_var="sbm2"
-spacing=5.
+# spacing=5.
 # row_var_type="nominal"
 # row_var_title="Secondary Bond Market"
 
@@ -170,7 +170,7 @@ cal_var=:sbm
 x_var="rt:n"
 x_var_type="nominal"
 legend_title="Rating"
-height=250
+#height=250
 
 y_var="diff"
 y_axis_title="% Diff in the Number of Issuers"
@@ -277,9 +277,9 @@ x_var="rt:n"
 x_var_type="nominal"
 legend_title="Rating"
 # cal_formula = string("datum.sbm2 == 'ats'  ? 'ATS' : 'OTC'")
-height=250
+#height=250
 row_var="sbm2"
-spacing=5.
+# spacing=5.
 # row_var_type="nominal"
 # row_var_title="Secondary Bond Market"
 
@@ -313,7 +313,7 @@ cal_var=:sbm
 x_var="rt:n"
 x_var_type="nominal"
 legend_title="Rating"
-height=250
+#height=250
 
 y_var="diff"
 y_axis_title="% Diff in the Number of Trades"
@@ -420,9 +420,9 @@ x_var="rt:n"
 x_var_type="nominal"
 legend_title="Rating"
 # cal_formula = string("datum.sbm2 == 'ats'  ? 'ATS' : 'OTC'")
-height=250
+#height=250
 row_var="sbm2"
-spacing=5.
+# spacing=5.
 # row_var_type="nominal"
 # row_var_title="Secondary Bond Market"
 
@@ -457,7 +457,7 @@ cal_var=:sbm
 x_var="rt:n"
 x_var_type="nominal"
 legend_title="Rating"
-height=250
+#height=250
 
 y_var="diff"
 y_axis_title="% Diff in the Number of Bonds"
@@ -569,9 +569,9 @@ x_var="rt:n"
 x_var_type="nominal"
 legend_title="Rating"
 # cal_formula = string("datum.sbm2 == 'ats'  ? 'ATS' : 'OTC'")
-height=250
+#height=250
 row_var="sbm2"
-spacing=5.
+# spacing=5.
 # row_var_type="nominal"
 # row_var_title="Secondary Bond Market"
 
@@ -607,7 +607,7 @@ cal_var=:sbm
 x_var="rt:n"
 x_var_type="nominal"
 legend_title="Rating"
-height=250
+#height=250
 
 y_var="diff"
 y_axis_title="% Trade Volume Diff by Secondary Market"
