@@ -199,8 +199,8 @@ x_var_type="nominal"
 legend_title="Secondary Market"
 
 y_var="value"
-y_axis_title="Number of Issuers"
-title=["Number of Issuers of Non-MTN-Bonds Traded",
+y_axis_title="Trade Count"
+title=["Number of Trades of Non-MTN-Bonds Traded",
         " by Number of Covenant Categories per Bond"]
 if :period in Symbol.(names(tt))
     title[end] = string(title[end], " - ", tt[1, :period])
@@ -208,9 +208,124 @@ end
 
 include(string(scripts_path, "/", "single_vega_plt_script.jl"))
 push!(pl, p)
-
-
 #}}}
+# Percentage Trade Count {{{2
+color_scale="viridis"
+
+cond = .&(df[:, :sbm] .!= :any, df[:, :rt] .== :any)
+tt = df[cond, :]
+
+x_var="sbm:n"
+x_var_type="nominal"
+legend_title="Secondary Market"
+
+y_var="perc_sbm_total"
+y_axis_title="Share of Trades"
+title=["Secondary-Market-Contingent Share of Trades of Non-MTN-Bonds Traded",
+       " by Number of Covenant Categories per Bond"]
+if :period in Symbol.(names(tt))
+    title[end] = string(title[end], " - ", tt[1, :period])
+end
+
+include(string(scripts_path, "/", "single_vega_plt_script.jl"))
+push!(pl, p)
+# }}}
+# Percentage Trade Count 2 {{{2
+color_scale="bluepurple"
+
+x_var="rt:n"
+x_var_type="nominal"
+legend_title="Rating"
+
+y_var="perc_sbm_rt_total"
+y_axis_title="Share of Trades"
+
+# ATS
+cond = .&(df[:, :sbm] .== :ats, df[:, :rt] .!= :any)
+tt = df[cond, :]
+
+title=["ATS - Rating-Contingent Share of Trades of Non-MTN-Bonds",
+       " by Number of Covenant Categories per Bond"]
+if :period in Symbol.(names(tt))
+    title[end] = string(title[end], " - ", tt[1, :period])
+end
+
+include(string(scripts_path, "/", "single_vega_plt_script.jl"))
+push!(pl, p)
+
+# OTC
+cond = .&(df[:, :sbm] .== :otc, df[:, :rt] .!= :any)
+tt = df[cond, :]
+
+title=["OTC - Rating-Contingent Share of Trades of Non-MTN-Bonds",
+       " by Number of Covenant Categories per Bond"]
+if :period in Symbol.(names(tt))
+    title[end] = string(title[end], " - ", tt[1, :period])
+end
+
+include(string(scripts_path, "/", "single_vega_plt_script.jl"))
+push!(pl, p)
+# }}}
+# ATS OTC {{{2
+color_scale="bluepurple"
+
+cond = .&(df[:, :sbm] .!= :any, df[:, :rt] .!= :any)
+tt  = df[cond, :]
+tt[:, "sbm2"] .= uppercase.(string.(tt[:, :sbm]))
+
+x_var="rt:n"
+x_var_type="nominal"
+legend_title="Rating"
+# cal_formula = string("datum.sbm2 == 'ats'  ? 'ATS' : 'OTC'")
+height=250
+row_var="sbm2"
+spacing=5.
+# row_var_type="nominal"
+# row_var_title="Secondary Bond Market"
+
+row_var_title="% of Rating- & Market-Contingent Trades" 
+y_var="perc_sbm_rt_total"
+y_axis_title=""
+# y_axis_title="% of Total Trade Volume by Secondary Market"
+title=["Rating- and Secondary-Market-Contingent Share of Trades Non-MTN-Bond", 
+       " by Number of Covenant Categories per Bond"]
+if :period in Symbol.(names(tt))
+    title[end] = string(title[end], " - ", tt[1, :period])
+end
+
+include(string(scripts_path, "/", "dual_vega_plt_script.jl"))
+push!(pl, p)
+# }}}
+# Volume Percentage Diff by Secondary Market {{{2
+color_scale="bluepurple"
+
+cond = .&(df[:, :sbm] .== :ats, df[:, :rt] .!= :any)
+ats_vol  = df[cond, :perc_sbm_rt_total]
+
+cond = .&(df[:, :sbm] .== :otc, df[:, :rt] .!= :any)
+otc_vol = df[cond, :perc_sbm_rt_total]
+tt  = df[cond, :]
+tt[!, :diff] = ats_vol - otc_vol
+
+cal_formula = ""
+cal_legend="Secondary Bond Market"
+cal_var=:sbm
+x_var="rt:n"
+x_var_type="nominal"
+legend_title="Rating"
+height=250
+
+y_var="diff"
+y_axis_title="% Diff in the Number of Trades"
+title=["ATS v.s. OTC % Difference in Rating- Contingent Number of" ,
+       "Non-MTN-Bond Trades by Number of Covenant Categories per Bond"]
+if :period in Symbol.(names(tt))
+    title[end] = string(title[end], " - ", tt[1, :period])
+end
+
+include(string(scripts_path, "/", "single_vega_plt_script.jl"))
+push!(pl, p)
+# }}}
 #}}}
 # Bonds {{{1
 stats_var=:bonds
