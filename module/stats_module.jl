@@ -9,6 +9,7 @@ using Dates
 using Statistics
 
 #  STATS  {{{1
+# Trace Stats (Bond Count, Trade Count, Trade Volume) {{{2
 function stats_calculator(df::DataFrame, groups::Array{Symbol,1};
                           var_suffix::Symbol=Symbol(""))
     cols = vcat(groups, [:cusip_id, :entrd_vol_qt])
@@ -66,13 +67,12 @@ function trace_stats(df::DataFrame)
 
     return sort!(cdf[:, col_order], groups)
 end
-
+# }}}2
 # INDICATORS {{{2
 function convert_2_bool(df::DataFrame, x)
     return .&(df[:, x] .!== missing, df[:, x] .== "Y")
 end
-
-# }}}
+# }}}2
 # CUSIPS stats by ATS/iOTC and IG/HY {{{2
 function smk_rt_cov_indicators(x)
    ats = sum(x[:, :ats] .== 1) .> 0
@@ -191,7 +191,6 @@ function compute_indicators(df::DataFrame;
     return df
 end
 
-
 function stats_by_yr_mo_issuer(df::DataFrame;
                                groups::Array{Symbol,1}=[:trd_exctn_yr, :trd_exctn_mo, :ISSUER_ID, :cusip_id],
                                indicators::Array{Symbol,1}=[:ats_ind, :cov_ind, :ig_ind],
@@ -234,7 +233,8 @@ function stats_by_yr_mo_issuer(df::DataFrame;
                    [x => sum for x in vcols],)
     # ===================================================================
 end
-# }}}
+# }}}2
+# }}}1
 # New Analysis {{{1
 # Filtering Functions {{{2
 struct Filter
@@ -531,7 +531,7 @@ function save_stats_data(dto, df::DataFrame)
     date_cols = [Symbol(x) for x in names(df) if 
                 any([occursin(y, x) for y in ["yr", "qtr", "mo"]])]
     fd(x) = occursin("yr", string(x)) ? "" : occursin("qtr", string(x)) ? :Q : :m
-    dateid = Symbol([Symbol(fd(x), minimum(df[:, x])) for x in date_cols]...)
+    dateid = Symbol([Symbol(fd(x), Int64(minimum(df[:, x]))) for x in date_cols]...)
     
     # Type of Statistics
     # type 1: by number of covenants
@@ -584,8 +584,6 @@ function load_stats_data(dto, yr::Int64, qtr::Int64; stats_by_num_cov::Bool=true
 
     return df
 end
-# }}}
-
-# }}}
+# }}}1
 end
 

@@ -3,8 +3,8 @@ using CSV
 using Dates
 using DataFrames
 using DayCounts
-using Revise
-using VegaLite, VegaDatasets
+# using Revise
+# using VegaLite, VegaDatasets
 
 using Distributed
 
@@ -54,9 +54,9 @@ dfl_qtr = @time fetch(Distributed.@spawn [StatsMod.stats_generator(ffdf,
                                        StatsMod.dfrow2dict(combdf, row);
                                        groupby_date_cols=date_cols)
                           for row in 1:size(combdf, 1)])
-dfa_qtr = sort(vcat(dfl_qtr...), names(combdf))
-dfa_qtr = StatsMod.gen_sbm_rt_cvt_cat_vars(dfa_qtr)
-StatsMod.save_stats_data(dto, dfa_qtr)
+scc = sort(vcat(dfl_qtr...), names(combdf))
+scc = StatsMod.gen_sbm_rt_cvt_cat_vars(scc)
+StatsMod.save_stats_data(dto, scc)
 
 # STATS BY NUMBER OF COVENANTS #######################################
 ffdf[!, :sum_num_cov] .= sum([ffdf[:, Symbol(:cg, x)] for x in 1:15])
@@ -67,5 +67,5 @@ combdf = StatsMod.gen_sbm_rt_cvt_cat_vars(combdf)
 dfl = @time fetch(Distributed.@spawn [StatsMod.compute_stats_by_num_cov(ffdf, sbm, rt, combdf) for 
                     sbm in [:any, :ats, :otc], rt in [:any, :ig, :hy]])
 
-df = vcat(dfl...)
-StatsMod.save_stats_data(dto, df)
+snc = vcat(dfl...)
+StatsMod.save_stats_data(dto, snc)
