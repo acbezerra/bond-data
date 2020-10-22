@@ -1,0 +1,21 @@
+python/intelpython3(5):ERROR:150: Module 'python/intelpython3' conflicts with the currently loaded module(s) 'python/miniconda/3.7.0'
+python/intelpython3(5):ERROR:102: Tcl command execution failed: conflict python/3.6.1 python/intelpython2 python/miniconda/3.7.0 python/anaconda3.6.1 
+
+/home/artur/BondPricing/bond-data/data-scripts
+/home/artur/BondPricing/bond-data/log_files/MERGE/299802[14].acropolis
+/var/spool/torque/aux//299802[14].acropolis
+14
+i. Number of processors/cores: 10
+ii. Memory:
+iii. Job Number: 14
+
+#################
+Epilogue Job Info:
+Job ID: 299802[14].acropolis
+User ID: artur
+Job Name: trace_filter-14
+Resource List: nodes=1:ppn=10,mem=50gb,neednodes=1:ppn=10,walltime=2400:00:00
+Resources Used: cput=00:21:58,vmem=46906080kb,walltime=00:18:59,mem=34515520kb,energy_used=0
+Exit Code: 0
+#################
+

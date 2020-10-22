@@ -46,10 +46,11 @@ end
 date_cols = [:trd_exctn_yr, :trd_exctn_qtr]
 # Form combinations of ATS, IG and COVENANT filters
 combdf =  StatsMod.get_filter_combinations()
+
+# STATS BY COVENANT CATEGORIES #######################################
 # Select cols and create smk indicator variable:
 ffdf = StatsMod.filter_selected(fdf; date_cols=date_cols)
 
-# STATS BY COVENANT CATEGORIES #######################################
 dfl_qtr = @time fetch(Distributed.@spawn [StatsMod.stats_generator(ffdf,
                                        StatsMod.dfrow2dict(combdf, row);
                                        groupby_date_cols=date_cols)
@@ -59,12 +60,12 @@ scc = StatsMod.gen_sbm_rt_cvt_cat_vars(scc)
 StatsMod.save_stats_data(dto, scc)
 
 # STATS BY NUMBER OF COVENANTS #######################################
-ffdf[!, :sum_num_cov] .= sum([ffdf[:, Symbol(:cg, x)] for x in 1:15])
+fdf[!, :sum_num_cov] .= sum([fdf[:, Symbol(:cg, x)] for x in 1:15])
 dfl = []
 combdf =  StatsMod.get_filter_combinations()
 combdf = StatsMod.gen_sbm_rt_cvt_cat_vars(combdf)
 
-dfl = @time fetch(Distributed.@spawn [StatsMod.compute_stats_by_num_cov(ffdf, sbm, rt, combdf) for 
+dfl = @time fetch(Distributed.@spawn [StatsMod.compute_stats_by_num_cov(fdf, sbm, rt, combdf) for 
                     sbm in [:any, :ats, :otc], rt in [:any, :ig, :hy]])
 
 snc = vcat(dfl...)
