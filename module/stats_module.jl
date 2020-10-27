@@ -234,6 +234,104 @@ function stats_by_yr_mo_issuer(df::DataFrame;
     # ===================================================================
 end
 # }}}2
+# Tables {{{2
+struct Tags
+    sbmf::Function
+    crf::Function
+    covf::Function
+    tag::Function
+end
+
+function tag_functions_constructor()
+    # Secondary Bond Market Indicator
+    sbmf(x::Int64) = Dict{Int64, Symbol}(0 => :otc, 1 => :ats, 2 => :all)[x]
+
+    # Credit Rating Indicator
+    crf(x::Int64) = Dict{Int64, Symbol}(0 => :hy, 1 => :ig, 2 => :all)[x]
+
+    # Covenant Presence Indicator
+    covf(x::Int64) = Dict{Int64, Symbol}(0 => :ncov, 1 => :cov, 2 => :all)[x]
+
+    tag(x::Int64, y::Int64, z::Int64) = Symbol(sbmf(x), :_, crf(y), :_, covf(z))
+
+    return Tags(sbmf, crf, covf, tag)
+end
+
+function compute_stats(df, gbvars::Array{Symbol, 1};
+                       svars::Array{Symbol, 1}=[:bond_count, 
+                                                :trade_count, 
+                                                :trade_volume])
+    sdf = DataFrame()
+    if isempty(gbvars)
+        sdf = combine(df,  
+                  # Number of Bonds
+                  :cusip_id => (x -> size(unique(x), 1)) => :bond_count,
+                  # Trade Count
+                  nrow => :trade_count, 
+                  # Trade Volume in USD tn
+                  :entrd_vol_qt => (x -> sum(x)/1e9) => :trade_volume)
+    else    
+        sdf = combine(groupby(df, gbvars),  
+                      # Number of Bonds
+                      :cusip_id => (x -> size(unique(x), 1)) => :bond_count,
+                      # Trade Count
+                      nrow => :trade_count, 
+                      # Trade Volume in USD tn
+                      :entrd_vol_qt => (x -> sum(x)/1e9) => :trade_volume)
+        sdf = sort!(sdf, gbvars, rev=true)
+    end
+
+    for col in [:ats, :ig, :covenant]
+        if !(col in gbvars)
+            sdf[!, col] .= 2
+        end
+    end
+    
+    gbvars = [:ats, :ig, :covenant]
+    for col in gbvars
+        sdf[!, col] = Int64.(sdf[:, col])
+    end
+    
+    # Tags
+    ts = tag_functions_constructor()
+    sdf[:, :sbm_rt_cov] = ts.tag.(Int64.(sdf[!, :ats]), 
+                                  Int64.(sdf[!, :ig]), 
+                                  Int64.(sdf[!, :covenant]))
+
+    # Reorder columns:
+    sdf = sdf[:, vcat(gbvars, :sbm_rt_cov, svars)]
+    
+    return sdf
+end
+
+function form_stats_table(sdf::DataFrame)
+    ts = tag_functions_constructor()
+    sdf[:, :sbm] = ts.sbmf.(sdf[:, :ats])
+    sdf[:, :cr] = ts.crf.(sdf[:, :ig])
+    sdf[:, :cov] = ts.covf.(sdf[:, :covenant])
+
+    # Keep Only Cases where covenant = all
+    df = sdf[sdf[:, :covenant] .== 2, :]
+
+    # Drop columns
+    df = df[:, Not([:ats, :ig, :covenant, :sbm_rt_cov, :cov])]
+
+    # Reshape
+    df = unstack(stack(df, [:bond_count, :trade_count, :trade_volume]), 
+                [:variable, :cr], :sbm, :value)
+
+    # Compute Ratios
+    df[!, :ats_otc] = (df[!, :ats]./df[!, :otc]) .* 100
+    df[!, :ats_total] = (df[!, :ats]./df[!, :all]) .* 100
+    df[!, :otc_total] = (df[!, :otc]./df[!, :all]) .* 100
+
+    # Sort Data
+    ff(x) = Dict(:ig => 0, :hy => 1, :all => 2)[x]
+    cols = [:variable, :cr, :ats, :otc, :all, 
+            :ats_otc, :ats_total, :otc_total]
+    return sort!(df, [:variable, order(:cr, by=ff)])[:, cols]
+end
+# }}}2
 # }}}1
 # New Analysis {{{1
 # Filtering Functions {{{2
