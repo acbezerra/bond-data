@@ -5,7 +5,7 @@ using CSV
 # using Distributed
 # using ImageMagick
 using FileIO
-using VegaLite 
+using VegaLite
 
 main_path = "/home/artur/BondPricing/bond-data"
 scripts_path = string(main_path, "/data-scripts/plots")
@@ -16,7 +16,7 @@ include(string(joinpath(module_path, "data_module"), ".jl"))
 include(string(joinpath(module_path, "stats_module"), ".jl"))
 include(string(joinpath(module_path, "plot_module"), ".jl"))
 
-# NEED TO LOAD DFA 
+# NEED TO LOAD DFA
 dto = DataMod.data_obj_constructor()
 
 # yr and qtr are defined outside this script
@@ -42,14 +42,18 @@ height=350
 save_plt=true
 plt_type = "cov_cat"
 file_ext="png"
-# }}}
+# }}}1
 pl = [ ]
 
 # Issuers per Covenant Category {{{1
 stats_var=:issuers
 tt = PlotMod.prepare_cat_plot(scc; stat=stats_var)
+ig_tt = PlotMod.prepare_cat_plot(scc; stat=stats_var, rt=:ig)
+hy_tt = PlotMod.prepare_cat_plot(scc; stat=stats_var, rt=:hy)
+rt_tt = vcat(ig_tt, hy_tt)
 
-## Issuer Count
+
+## Issuer Count {{{2
 y_var="value"
 y_axis_title="Number of Issuers"
 title=[string("Number of Issuers of Non-MTN-Bonds Traded per Covenant Category")]
@@ -59,8 +63,8 @@ end
 
 include(string(scripts_path, "/", "single_vega_plt_script.jl"))
 push!(pl, p)
-
-## Issuer Percentage Count
+# }}}2
+## Issuer Percentage Count {{{2
 y_var="perc_total"
 y_axis_title="% of Total Number of Issuers"
 title=[string("Number of Issuers by Covenant Category as Percentage of "),
@@ -71,8 +75,8 @@ end
 
 include(string(scripts_path, "/", "single_vega_plt_script.jl"))
 push!(pl, p)
-
-## Issuer Percentage Count by Secondary Market
+# }}}2
+## Issuer Percentage Count by Secondary Market {{{2
 y_var="perc_sbm_total"
 y_axis_title="% of Total Non-MTN Bonds Traded by Secondary Market"
 title=["Number of Issuers by Covenant Category as Percentage of Total",
@@ -96,7 +100,6 @@ title=[string("Number of Non-MTN Bonds Traded per Covenant Category")]
 if :period in Symbol.(names(tt))
     title[end] = string(title[end], " - ", tt[1, :period])
 end
-
 
 include(string(scripts_path, "/", "single_vega_plt_script.jl"))
 push!(pl, p)
@@ -206,5 +209,3 @@ end
 include(string(scripts_path, "/", "single_vega_plt_script.jl"))
 push!(pl, p)
 # }}}
-
-

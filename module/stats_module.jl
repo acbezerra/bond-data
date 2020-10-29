@@ -4,7 +4,7 @@ module StatsMod
 
 using CSV
 using DataFrames
-using Distributed
+# using Distributed
 using Dates
 using Statistics
 
@@ -679,6 +679,8 @@ function load_stats_data(dto, yr::Int64, qtr::Int64; stats_by_num_cov::Bool=true
     for col in columns
         df[!, col] = Symbol.(df[:, col])
     end
+    # trade execution quarter should be an integer:
+    df[!, :trd_exctn_qtr] = Int64.(df[!, :trd_exctn_qtr])
 
     return df
 end

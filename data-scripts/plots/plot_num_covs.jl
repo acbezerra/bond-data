@@ -35,7 +35,7 @@ height=350
 save_plt=true
 plt_type = "num_cov"
 file_ext="png"
-# }}}
+# }}}1
 pl = [ ]
 
 # yr and qtr are defined outside this script

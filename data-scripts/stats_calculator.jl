@@ -6,14 +6,14 @@ using DayCounts
 # using Revise
 # using VegaLite, VegaDatasets
 
-using Distributed
+# using Distributed
 
-@everywhere main_path = "/home/artur/BondPricing/bond-data"
-@everywhere module_path = string(main_path, "/module")
-@everywhere script_path = string(main_path, "/data-scripts")
-@everywhere include(string(joinpath(module_path, "data_module"), ".jl"))
-@everywhere include(string(joinpath(module_path, "stats_module"), ".jl"))
-@everywhere include(string(joinpath(module_path, "plot_module"), ".jl"))
+main_path = "/home/artur/BondPricing/bond-data"
+module_path = string(main_path, "/module")
+script_path = string(main_path, "/data-scripts")
+include(string(joinpath(module_path, "data_module"), ".jl"))
+include(string(joinpath(module_path, "stats_module"), ".jl"))
+include(string(joinpath(module_path, "plot_module"), ".jl"))
 
 # Capture Job Number
 job_num = parse(Int, ARGS[1])
@@ -22,7 +22,8 @@ println("job_num: ", job_num)
 # Define Year and Quarter
 min_yr = 2016
 max_yr = 2019
-yrqtr = DataFrames.crossjoin(DataFrame(:year => min_yr:max_yr), DataFrame(:qtr => 1:4))
+yrqtr = DataFrames.crossjoin(DataFrame(:year => min_yr:max_yr), 
+                             DataFrame(:qtr => 1:4))
 
 # TRACE
 yr = yrqtr[job_num, :year]
@@ -51,7 +52,7 @@ combdf =  StatsMod.get_filter_combinations()
 # Select cols and create smk indicator variable:
 ffdf = StatsMod.filter_selected(fdf; date_cols=date_cols)
 
-dfl_qtr = @time fetch(Distributed.@spawn [StatsMod.stats_generator(ffdf,
+dfl_qtr = @time fetch(@spawn [StatsMod.stats_generator(ffdf,
                                        StatsMod.dfrow2dict(combdf, row);
                                        groupby_date_cols=date_cols)
                           for row in 1:size(combdf, 1)])
@@ -60,6 +61,9 @@ scc = StatsMod.gen_sbm_rt_cvt_cat_vars(scc)
 StatsMod.save_stats_data(dto, scc)
 
 # STATS BY NUMBER OF COVENANTS #######################################
+# Keep only the selected securities 
+fdf = fdf[fdf[:, :selected], :]
+
 fdf[!, :sum_num_cov] .= sum([fdf[:, Symbol(:cg, x)] for x in 1:15])
 dfl = []
 combdf =  StatsMod.get_filter_combinations()

@@ -1,7 +1,7 @@
 # Define Modules
 pythonMod=python/intelpython3
 juliaPath=/home/artur/BondPricing/.julia
-juliaVersion=julia-1.5.1
+juliaVersion=julia-1.5.2
 
 # Load Python and Julia Modules
 module load $pythonMod 

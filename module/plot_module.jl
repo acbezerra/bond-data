@@ -86,7 +86,7 @@ end
 function prepare_cat_plot(dfa::DataFrame; stat::Symbol=:volume, 
                           rt::Symbol=:any, cvt::Symbol=:any,
                           date_cols::Array{Symbol, 1}=[:trd_exctn_yr, :trd_exctn_qtr])
-    cond = .&(dfa[:, :sbm] .!= :both, dfa[:, :rt] .== :any, dfa[:, :cvt] .== :any)
+    cond = .&(dfa[:, :sbm] .!= :both, dfa[:, :rt] .== rt, dfa[:, :cvt] .== :any)
     df = dfa[cond, :]
     rt_renamer(x) = x == :any ? "ANY" : x == :ig ? "Investment Grade" : "High Yield"
     sbm_renamer(x) = uppercase(string(x))
@@ -102,10 +102,13 @@ function prepare_cat_plot(dfa::DataFrame; stat::Symbol=:volume,
     stat_cols = [Symbol(x) for x in names(df) if .&(occursin("cg", x), occursin(statd[stat][1], x))] 
     col_ord = vcat(header_cols, stat_cols)
 
-    # Get Volume by SBM
-    any_cond = .&(df[:, :sbm] .== :any, [df[:, x] .== :any for x in [:rt, :cvt]]...)
-    ats_cond = .&(df[:, :sbm] .== :ats, [df[:, x] .== :any for x in [:rt, :cvt]]...)
-    otc_cond = .&(df[:, :sbm] .== :otc, [df[:, x] .== :any for x in [:rt, :cvt]]...)
+    # Get Stat by SBM
+    any_cond = .&(df[:, :sbm] .== :any, df[:, :rt] .== rt,
+                  df[:, :cvt] .== :any)
+    ats_cond = .&(df[:, :sbm] .== :ats, df[:, :rt] .== rt,
+                  df[:, :cvt] .== :any)
+    otc_cond = .&(df[:, :sbm] .== :otc, df[:, :rt] .== rt,
+                  df[:, :cvt] .== :any)
 
     vold = Dict{Symbol, Float64}(Symbol(:total, statd[stat][2]) => df[any_cond, Symbol(:total, statd[stat][2])][1],
                                  Symbol(:ats, statd[stat][2]) => df[ats_cond, Symbol(:total, statd[stat][2])][1],
@@ -136,6 +139,60 @@ function prepare_cat_plot(dfa::DataFrame; stat::Symbol=:volume,
     return df
 end
 
+# Prepare stats for ATS - OTC diff plots {{{2
+function get_ats_otc_diffs_by_rt(scc::DataFrame, stats_var::Symbol)
+    ig_tt = prepare_cat_plot(scc; stat=stats_var, rt=:ig)
+    hy_tt = prepare_cat_plot(scc; stat=stats_var, rt=:hy)
+    tt = vcat(ig_tt, hy_tt)
+    
+    # Since I am specifying the credit rating above, the
+    # total values here refer to
+    # (i) the secondary trading system: ATS, OTCS
+    # (ii) the credit quality of the bond: IG, HY
+    rename!(tt, :perc_sbm_total => :perc_sbm_rt_total)
+
+    # Notice the totals refer to the sum of across all
+    # observations in the same SBM-Credit Rating group.
+    # The groups consist of non-MTN bonds for which there is
+    # covenant information (but these bonds may or may
+    # not have covenant.)
+
+    # df = unstack(tt, [:rt, :cov_cat], :sbm, :perc_sbm_rt_total)
+    
+    # Absolute Values by Trading System and Credit Rating ########
+    value_df = unstack(tt, [:rt, :cov_cat], :sbm, :value)
+    rename!(value_df, :ats => :value_ats, :otc => :value_otc)
+    # Compute the Difference by Trading System
+    value_df[:, :value_diff] = value_df[:, :value_ats] .- value_df[:, :value_otc]
+    # ############################################################
+
+    # Percentage Values by Trading System and Credit Rating #######
+    perc_df = unstack(tt, [:rt, :cov_cat], :sbm, :perc_sbm_rt_total)
+    rename!(perc_df, :ats => :perc_ats, :otc => :perc_otc)
+    perc_df[:, :perc_diff] = perc_df[:, :perc_ats] .- perc_df[:, :perc_otc]
+    # ############################################################
+    
+    # Merge results
+    df = outerjoin(value_df, perc_df, on=[:rt, :cov_cat])
+    id_cols = [:rt, :cov_cat]
+    join_cols = vcat(id_cols, [:value_diff, :perc_diff])
+    df = outerjoin(tt, df[:, join_cols]; on=id_cols)
+
+    # Adjust column types
+    df[!, :variable] = string.(df[!, :variable])
+    for col in [:period, :sbm, :rt, :cvt]
+        df[!, col] = convert.(Symbol, df[!, col])
+    end
+    for col in [:cov_cat, :value, :value_diff]
+        df[!, col] = convert.(Int64, df[!, col])
+    end
+    for col in [:perc_total, :perc_sbm_rt_total, :perc_diff]
+        df[!, col] = convert.(Float64, df[!, col])
+    end
+
+    return df
+end
+# }}}2
 function prepare_num_cov_plot(df::DataFrame; stat::Symbol=:volume, 
                               vol_stat::Symbol=:total,
                               rt::Symbol=:any, cvt::Symbol=:any,
@@ -186,7 +243,7 @@ function prepare_num_cov_plot(df::DataFrame; stat::Symbol=:volume,
         
     return df
 end
-# }}}
+# }}}1 
 # Vega Plot Functions{{{1
 function sbm_vega_plt(df::DataFrame, col_var::String, 
                       x_var::String, y_var::String; 

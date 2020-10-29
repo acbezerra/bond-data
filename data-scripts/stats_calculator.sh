@@ -7,8 +7,8 @@
 ###################################################
 
 #!/bin/bash
-#PBS -N trace_filter
-#PBS -l nodes=1:ppn=10,mem=50g
+#PBS -N stats_calculator
+#PBS -l nodes=1:ppn=5,mem=50g
 #PBS -j oe
 #PBS -V
 #PBS -t 13-15
