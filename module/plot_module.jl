@@ -184,7 +184,8 @@ function get_ats_otc_diffs_by_rt(scc::DataFrame, stats_var::Symbol)
         df[!, col] = convert.(Symbol, df[!, col])
     end
     for col in [:cov_cat, :value, :value_diff]
-        df[!, col] = convert.(Int64, df[!, col])
+        vt = stats_var == :volume ? Float64 : Int64
+        df[!, col] = convert.(vt, df[!, col])
     end
     for col in [:perc_total, :perc_sbm_rt_total, :perc_diff]
         df[!, col] = convert.(Float64, df[!, col])

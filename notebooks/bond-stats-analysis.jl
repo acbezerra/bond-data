@@ -99,59 +99,6 @@ latexify(convert(Matrix, df[:, 2:end]); fmt="%.2f") |> print
 ## Computing Plot Inputs
 
 # %%
-using Statistics
-using Distributed
-include(string(joinpath(module_path, "data_module"), ".jl"))
-include(string(joinpath(module_path, "stats_module"), ".jl"))
-
-dto = DataMod.data_obj_constructor()
-
-# @time include(string(script_path, "/merge_trace_mergent.jl"))
-
-# Generate Trade Execution Quarter variable:
-if !(:trd_exctn_qtr in Symbol.(names(fdf)))
-    fdf[!, :trd_exctn_qtr] .= Int64.(ceil.(fdf[!, :trd_exctn_mo]/3))
-end
-
-# Groupby Date Variables:
-date_cols = [:trd_exctn_yr, :trd_exctn_qtr]
-# Form combinations of ATS, IG and COVENANT filters
-combdf =  StatsMod.get_filter_combinations()
-
-# STATS BY COVENANT CATEGORIES #######################################
-# Select cols and create smk indicator variable:
-ffdf = StatsMod.filter_selected(fdf; date_cols=date_cols)
-
-dfl_qtr = @time fetch(@spawn [StatsMod.stats_generator(ffdf,
-                                       StatsMod.dfrow2dict(combdf, row);
-                                       groupby_date_cols=date_cols)
-                          for row in 1:size(combdf, 1)])
-scc = sort(vcat(dfl_qtr...), names(combdf))
-scc = StatsMod.gen_sbm_rt_cvt_cat_vars(scc)
-StatsMod.save_stats_data(dto, scc)
-
-# STATS BY NUMBER OF COVENANTS #######################################
-# Keep only the selected securities
-fdf = fdf[fdf[:, :selected], :]
-
-fdf[!, :sum_num_cov] .= sum([fdf[:, Symbol(:cg, x)] for x in 1:15])
-dfl = []
-combdf =  StatsMod.get_filter_combinations()
-combdf = StatsMod.gen_sbm_rt_cvt_cat_vars(combdf)
-
-dfl = @time fetch(Distributed.@spawn [StatsMod.compute_stats_by_num_cov(fdf, sbm, rt, combdf) for
-                    sbm in [:any, :ats, :otc], rt in [:any, :ig, :hy]])
-
-snc = vcat(dfl...)
-StatsMod.save_stats_data(dto, snc)
-
-# %%
-
-
-# %% markdown
-## Plot Stats Section
-
-# %%
 module StatsCal
     using Distributed
 
@@ -163,18 +110,18 @@ module StatsCal
 
 #     yr = 2019
 #     qtr = 2
-    job_num=15
+    job_num=14
     ARGS=[string(job_num)]
     @time include(string(joinpath(script_path, "stats_calculator"), ".jl"))
 end
 
-# %%
-StatsCal.snc
 
-# %%
-dto = DataMod.data_obj_constructor()
+# %% markdown
+## Plot Stats Section
+
 
 #  %% Load the Data
+dto = DataMod.data_obj_constructor()
 yr = 2019
 qtr = 3
 
@@ -183,10 +130,56 @@ scc = StatsMod.load_stats_data(dto, yr, qtr; stats_by_num_cov=false)
 first(scc, 5)
 
 # %%
+main_path = "/home/artur/BondPricing/bond-data"
+scripts_path = string(main_path, "/data-scripts/plots")
+plt_dir = "plots"
 include(string(joinpath(module_path, "plot_module"), ".jl"))
-stats_var = :issuers
+
+# Common Parameters {{{1
+color_scale="viridis"
+cal_formula=""
+cal_var=""
+col_var="cov_cat"
+col_var_type="ordinal"
+col_title="Covenant Category"
+col_sort="ascending"
+x_var="sbm:n"
+x_var_type="nominal"
+x_axis_title=" "
+width_step=18
+legend_title="Secondary Market"
+spacing=4.5
+height=350
+save_plt=true
+plt_type = "cov_cat"
+file_ext="png"
+# }}}1
+
+stats_var=:issuers
+tt = PlotMod.prepare_cat_plot(scc; stat=stats_var)
 rt_tt = PlotMod.get_ats_otc_diffs_by_rt(scc, stats_var)
-first(rt_tt, 10)
+tt = deepcopy(rt_tt[rt_tt[:, :sbm] .== :otc, :])
+
+color_scale="bluepurple"
+
+cal_formula = ""
+cal_legend="Secondary Bond Market"
+cal_var=:sbm
+x_var="rt:n"
+x_var_type="nominal"
+legend_title="Rating"
+#height=250
+
+y_var="perc_diff"
+y_axis_title="% Difference in the Number of Issuers"
+title=["ATS v.s. OTC % Difference in Rating- Contingent Number of Issuers of" ,
+       "Non-MTN-Bonds by Covenant Categories"]
+if :period in Symbol.(names(tt))
+    title[end] = string(title[end], " - ", tt[1, :period])
+end
+
+include(string(scripts_path, "/", "single_vega_plt_script.jl"))
+
 
 # %%
 x_var="rt:n"
@@ -233,9 +226,21 @@ p = PlotMod.dual_vega_plt(rt_tt, col_var, x_var, y_var,  row_var;
 ### Stats By Covenant Categories
 
 # %%
+first(scc, 3)
+
+# %%
 scripts_path = string(main_path, "/data-scripts/plots")
 include(string(joinpath(scripts_path, "plot_cov_cat"), ".jl"))
 pl
+
+# %%
+stats_var = :volume
+tt = PlotMod.prepare_cat_plot(scc; stat=stats_var)
+rt_tt = PlotMod.get_ats_otc_diffs_by_rt(scc, stats_var)
+
+first(rt_tt, 3)
+
+first(tt, 3)
 
 # %% markdown
 ### Stats by Number of Covenant Categories
