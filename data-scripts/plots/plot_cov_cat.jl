@@ -27,7 +27,7 @@ scc = StatsMod.load_stats_data(dto, yr, qtr; stats_by_num_cov=false)
 # Choose sections to be run below: {{{1
 run_secs = Dict{Symbol, Bool}(:issuers => false,
                               :bonds => false,
-                              :trade_count => true, 
+                              :trade_count => true,
                               :trade_volume => true)
 run_all = true
 [run_secs[k] = true for k in keys(run_secs) if run_all]
@@ -58,6 +58,13 @@ if run_secs[:issuers]
     stats_var=:issuers
     tt = PlotMod.prepare_cat_plot(scc; stat=stats_var)
     rt_tt = PlotMod.get_ats_otc_diffs_by_rt(scc, stats_var)
+
+    color_scale="viridis"
+    cal_formula=""
+    x_var="sbm:n"
+    x_var_type="nominal"
+    x_axis_title=" "
+    legend_title="Secondary Market"
 
 # Issuer Count {{{2
 y_var="value"
@@ -139,9 +146,12 @@ if run_secs[:bonds]
     tt = PlotMod.prepare_cat_plot(scc; stat=stats_var)
     rt_tt = PlotMod.get_ats_otc_diffs_by_rt(scc, stats_var)
 
+    color_scale="viridis"
+    cal_formula=""
     x_var="sbm:n"
     x_var_type="nominal"
     x_axis_title=" "
+    legend_title="Secondary Market"
 
 # Bond Count {{{2
 y_var="value"
@@ -223,9 +233,12 @@ if run_secs[:trade_count]
     tt = PlotMod.prepare_cat_plot(scc; stat=stats_var)
     rt_tt = PlotMod.get_ats_otc_diffs_by_rt(scc, stats_var)
 
+    color_scale="viridis"
+    cal_formula=""
     x_var="sbm:n"
     x_var_type="nominal"
     x_axis_title=" "
+    legend_title="Secondary Market"
 
 # Trade Count {{{2
 y_var="value"
@@ -300,16 +313,19 @@ include(string(scripts_path, "/", "single_vega_plt_script.jl"))
 push!(pl, p)
 # }}}2
 end
-# }}}1 
+# }}}1
 # Trade Volume per Covenant Category {{{1
 if run_secs[:trade_volume]
     stats_var = :volume
     tt = PlotMod.prepare_cat_plot(scc; stat=stats_var)
     rt_tt = PlotMod.get_ats_otc_diffs_by_rt(scc, stats_var)
 
+    color_scale="viridis"
+    cal_formula=""
     x_var="sbm:n"
     x_var_type="nominal"
     x_axis_title=" "
+    legend_title="Secondary Market"
 
 # Trade Volume {{{2
 y_var="value"
@@ -361,7 +377,7 @@ legend_title="Rating"
 
 y_var="value_diff"
 y_axis_title="Absolute Difference in Trade Volume (USD tn)"
-title=["ATS v.s. OTC Absolute Difference in Rating-Contingent Trade Volume of " ,
+title=["ATS v.s. OTC Absolute Difference in Rating-Contingent Trade Volume of ",
        "Non-MTN-Bonds by Covenant Category"]
 if :period in Symbol.(names(tt))
     title[end] = string(title[end], " - ", tt[1, :period])
@@ -373,7 +389,7 @@ push!(pl, p)
 # Trade Volume Percentage Diff by Secondary Market {{{2
 y_var="perc_diff"
 y_axis_title="% Difference in Trade Volume"
-title=["ATS v.s. OTC % Difference in Rating-Contingent Trade Volume of " ,
+title=["ATS v.s. OTC % Difference in Rating-Contingent Trade Volume of ",
        "Non-MTN-Bonds by Covenant Category"]
 if :period in Symbol.(names(tt))
     title[end] = string(title[end], " - ", tt[1, :period])
@@ -381,6 +397,6 @@ end
 
 include(string(scripts_path, "/", "single_vega_plt_script.jl"))
 push!(pl, p)
-# }}}2
+#}}}2
 end
 # }}}1

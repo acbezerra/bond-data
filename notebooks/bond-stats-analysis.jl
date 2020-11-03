@@ -146,6 +146,3 @@ pl
 # %%
 include(string(joinpath(scripts_path, "plot_num_covs"), ".jl"))
 pl
-
-# %%
-a
