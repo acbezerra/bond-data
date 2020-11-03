@@ -121,7 +121,7 @@ end
 #  %% Load the Data
 dto = DataMod.data_obj_constructor()
 yr = 2019
-qtr = 2
+qtr = 1
 
 snc = StatsMod.load_stats_data(dto, yr, qtr; stats_by_num_cov=true)
 scc = StatsMod.load_stats_data(dto, yr, qtr; stats_by_num_cov=false)
@@ -140,18 +140,12 @@ scripts_path = string(main_path, "/data-scripts/plots")
 include(string(joinpath(scripts_path, "plot_cov_cat"), ".jl"))
 pl
 
-# %%
-stats_var = :volume
-tt = PlotMod.prepare_cat_plot(scc; stat=stats_var)
-rt_tt = PlotMod.get_ats_otc_diffs_by_rt(scc, stats_var)
-
-first(rt_tt, 3)
-
-first(tt, 3)
-
 # %% markdown
 ### Stats by Number of Covenant Categories
 
 # %%
 include(string(joinpath(scripts_path, "plot_num_covs"), ".jl"))
 pl
+
+# %%
+a
