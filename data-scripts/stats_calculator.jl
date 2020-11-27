@@ -15,6 +15,30 @@ include(string(joinpath(module_path, "data_module"), ".jl"))
 include(string(joinpath(module_path, "stats_module"), ".jl"))
 include(string(joinpath(module_path, "plot_module"), ".jl"))
 
+# module StatsCal
+#     using DataFrames
+#     using Distributed
+#
+#     main_path = "/home/artur/BondPricing/bond-data"
+#     module_path = string(main_path, "/module")
+#     script_path = string(main_path, "/data-scripts")
+#     include(string(joinpath(module_path, "data_module"), ".jl"))
+#     include(string(joinpath(module_path, "stats_module"), ".jl"))
+#
+#     # Define Year and Quarter
+#     min_yr = 2016
+#     max_yr = 2019
+#     yrqtr = DataFrames.crossjoin(DataFrame(:year => min_yr:max_yr),
+#                                  DataFrame(:qtr => 1:4))
+#     yrqtr[:, :job_num] = 1:size(yrqtr, 1)
+#
+#     yr = 2019
+#     qtr = 3
+#     job_num = yrqtr[.&(yrqtr[:, :year] .== yr, yrqtr[:, :qtr] .== qtr), :job_num][1]
+#     ARGS=[string(job_num)]
+#     @time include(string(joinpath(script_path, "stats_calculator"), ".jl"))
+# end
+
 # Capture Job Number
 job_num = parse(Int, ARGS[1])
 println("job_num: ", job_num)
@@ -22,7 +46,7 @@ println("job_num: ", job_num)
 # Define Year and Quarter
 min_yr = 2016
 max_yr = 2019
-yrqtr = DataFrames.crossjoin(DataFrame(:year => min_yr:max_yr), 
+yrqtr = DataFrames.crossjoin(DataFrame(:year => min_yr:max_yr),
                              DataFrame(:qtr => 1:4))
 
 # TRACE
@@ -61,7 +85,7 @@ scc = StatsMod.gen_sbm_rt_cvt_cat_vars(scc)
 StatsMod.save_stats_data(dto, scc)
 
 # STATS BY NUMBER OF COVENANTS #######################################
-# Keep only the selected securities 
+# Keep only the selected securities
 fdf = fdf[fdf[:, :selected], :]
 
 fdf[!, :sum_num_cov] .= sum([fdf[:, Symbol(:cg, x)] for x in 1:15])
@@ -69,7 +93,7 @@ dfl = []
 combdf =  StatsMod.get_filter_combinations()
 combdf = StatsMod.gen_sbm_rt_cvt_cat_vars(combdf)
 
-dfl = @time fetch(Distributed.@spawn [StatsMod.compute_stats_by_num_cov(fdf, sbm, rt, combdf) for 
+dfl = @time fetch(Distributed.@spawn [StatsMod.compute_stats_by_num_cov(fdf, sbm, rt, combdf) for
                     sbm in [:any, :ats, :otc], rt in [:any, :ig, :hy]])
 
 snc = vcat(dfl...)

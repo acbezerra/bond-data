@@ -27,7 +27,7 @@ merged_file_prefix="merged"
 
 # Statistics
 stats_dir="Stats"
-# }}}
+# }}}1
 # Data Objects {{{1
 mutable struct trace_obj
    trace_dir::String
@@ -67,7 +67,7 @@ mutable struct data_obj
    tr   # trace object
    mf   # mergent fisd object
 end
-# }}}
+# }}}1
 # Constructor {{{1
 function data_obj_constructor(; main_path::String=main_path,
                                data_dir::String=data_dir,
@@ -115,7 +115,7 @@ function data_obj_constructor(; main_path::String=main_path,
                   merged_file_prefix,
                   tr, mf) 
 end
-# }}}
+# }}}1
 # TRACE {{{1
 # STEP 1: Pre-Processing {{{2
 function save_preprocessed_df(dto, df::DataFrame,
@@ -199,7 +199,7 @@ function trace_preprocesser(dto, file_yr::String, file_qtr::String;
        return cancel_trd_df, reverse_trd_df, original_trd_df
     end
 end
-# }}}
+# }}}2
 # STEP 2: Collecting Quarterly Pre-Processed Files {{{2
 function group_pre_proc_by_yr(dto, yr::Int64;
                               df_type::String="cancel",
@@ -244,7 +244,7 @@ function group_pre_proc_by_yr(dto, yr::Int64;
         return df
     end
 end
-# }}}
+# }}}2
 # STEP 3: Process Quarterly Files {{{2
 function process_trace(dto, file_yr::Int64, file_qtr::Int64;
                        save_proc_df::Bool=true, return_proc_df::Bool=false)
@@ -303,9 +303,8 @@ function process_trace(dto, file_yr::Int64, file_qtr::Int64;
         return odf
     end
 end
-# }}}
+# }}}2
 # STEP 4: Filter Agency Trades et al {{{2
-
 # Remove Dealer-Customer Agency Trades without Commission {{{3
 function filter_agency_trades(df::DataFrame;
                                               del_nca_trds::Bool=false)
@@ -330,7 +329,7 @@ function filter_agency_trades(df::DataFrame;
 
     return df
 end
-# }}}
+# }}}3
 # Remove double reporting of interdealer transactions {{{3
 function remove_interdealer_buyer_side_reports(df::DataFrame;
                                                rename_rpt_party::Bool=true)
@@ -348,7 +347,7 @@ function remove_interdealer_buyer_side_reports(df::DataFrame;
 
    return df[.!cond, :]
 end
-# }}}
+# }}}3
 # Filter Special Trades {{{3
 function filter_special_conditions(df::DataFrame;
                                    del_wi_trds::Bool=true,
@@ -416,7 +415,7 @@ function filter_special_conditions(df::DataFrame;
 
     return df[cond, :]
 end
-# }}}
+# }}}3
 # Filter Odd Settlement Dates {{{3
 function filter_days_to_settlement(df::DataFrame)
     # Approximately 97% of the trades are settled
@@ -440,8 +439,9 @@ function filter_days_to_settlement(df::DataFrame)
 
     return df
 end
-# }}}
-# }}}
+# }}}3
+# }}}2
+# }}}1
 # MERGENT {{{1
 # Ratings Dataset {{{2
 # Get column types
@@ -472,7 +472,7 @@ function load_mfisd_ratings(dto; filter_rating::Bool=true,
 
     return rdf
 end
-# }}}
+# }}}2
 # BOND ISSUES Dataset {{{2
 # Get column types
 function return_issues_type(x::String)
@@ -523,7 +523,7 @@ function load_mfisd_bi(dto;
 
     return df[.&(cond1, cond2), :]
 end
-# }}}
+# }}}2
 # MERGE FISD DFs {{{2
 function merge_mfisd_issues_ratings(idf::DataFrame, rdf::DataFrame;
                                     bond_id::Symbol=:ISSUE_ID,
@@ -558,7 +558,7 @@ function merge_mfisd_issues_ratings(idf::DataFrame, rdf::DataFrame;
 
     return sort(irdf, [bond_id, :RATING_DATE])
 end
-# }}}
+# }}}2
 # FINAL MERGENT FISD {{{2
 function mergent_rating_filter(dto, mdf::DataFrame;
                                rating_types::Array{String, 1}=["MR", "SPR"])
@@ -632,7 +632,7 @@ function get_mergent_fisd_df(dto;
 
     return mdf
 end
-# }}}
+# }}}2
 # LOAD FILTERED MERGENT {{{2
 function load_mergent_filtered_df(dto; drop_cols::Bool=true)
     mdf_fpath = dto.mf.mergent_path
@@ -690,8 +690,8 @@ function load_mergent_filtered_df(dto; drop_cols::Bool=true)
 
     return mdf
 end
-# }}}
-# }}}
+# }}}2
+# }}}1
 # MERGE TRACE and MERGENT {{{1
 # PART 1 - MERGE INDEXES {{{2
 function merge_trace_mergent_index(tdf::DataFrame, mdf::DataFrame)
@@ -739,7 +739,7 @@ function merge_trace_mergent_index(tdf::DataFrame, mdf::DataFrame)
 
     return idf
 end
-# }}}
+# }}}2
 # PART 2 - DIAGNOSTICS {{{2
 function merge_diagnosis(tdf::DataFrame, mdf::DataFrame, idf::DataFrame)
     # %% idf is the mergent index dataframe computed by
@@ -771,7 +771,7 @@ function merge_diagnosis(tdf::DataFrame, mdf::DataFrame, idf::DataFrame)
     return DataFrame(:match_ratio => match_ratio,
                      :cond_success_rate => cond_success_rate)
 end
-# }}}
+# }}}2
 # MAIN - MERGE TRACE AND MERGENT {{{2
 function merge_trace_mergent_dfs(dto, tdf::DataFrame, mdf::DataFrame;
                                  mcols=Array{String, 1}[])
@@ -791,7 +791,7 @@ function merge_trace_mergent_dfs(dto, tdf::DataFrame, mdf::DataFrame;
 
     return fdf, mdiag
 end
-# }}}
+# }}}2
 # FINAL - MERGENT FISD Analysis {{{2
 function count_rows(mdf::DataFrame, id_cols::Array{Symbol,1};
                     min_date::Date=Dates.Date("20111231", date_format))
@@ -821,8 +821,8 @@ function find_multiple_occurrences(mdf::DataFrame, id_cols::Array{Symbol,1};
      tmp2 = sort!(combine(groupby(unique(tmp2), Not(:value)), nrow), :nrow, rev=true)
      return tmp2[tmp2[:, :nrow] .> 1, :]
 end
-# }}}
-# }}}
+# }}}2
+# }}}1
 # ANALYSIS {{{1
 # IG and HY {{{2
 function ig_classifier(rt::String, type::String)
@@ -843,7 +843,7 @@ function ig_classifier(rt::String, type::String)
 
     return (rt in ig)
 end
-# }}}
+# }}}2
 # AGE and TTM {{{2
 function compute_age_ttm(df::DataFrame; basis=DayCounts.Actual360())
      date_format = Dates.DateFormat("yyyymmdd")
@@ -858,7 +858,7 @@ function compute_age_ttm(df::DataFrame; basis=DayCounts.Actual360())
 
      return df
 end
-# }}}
+# }}}2
 # TRADE SIZE CATEGORIES {{{2
 # Group 1: 0-100k
 # Group 2: 100k-1M
@@ -881,7 +881,7 @@ function compute_trade_size_cats(df::DataFrame)
     
     return df
 end
-# }}}
+# }}}2
 # Create Stats variables {{{2
 function create_stats_vars(df::DataFrame)
     # IG Indicator
@@ -902,7 +902,7 @@ function create_stats_vars(df::DataFrame)
 
     return df
 end
-# }}}
+# }}}2
 # COVENANT Groups {{{2
 function cov_cond(df::DataFrame, var::Symbol)
     nonboolcov_str = [:RATING_DECLINE_PROVISION,
@@ -934,7 +934,7 @@ function covgr_indicators(df::DataFrame)
 
     return df
 end
-# }}}
-# }}}
+# }}}2
+# }}}1
 # MODULE END =============================================================================
 end

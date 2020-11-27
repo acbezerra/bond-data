@@ -64,21 +64,27 @@ end
 # Load Trace Filtered DataFrame
 filter_fpath = string(dto.tr.trace_path, "/", dto.tr.filter_dir)
 filter_fname = string(dto.tr.filter_file_prefix, "_", yr, "_Q", qtr, ".csv")
-tdf = @time DataFrame!(CSV.File(string(filter_fpath, "/", filter_fname), 
+tdf = @time DataFrame!(CSV.File(string(filter_fpath, "/", filter_fname),
                                 types=dto.tr.colsd))
 
 # Drop columns
-trcols = [x for x in Symbol.(names(tdf)) if x in 
+trcols = [x for x in Symbol.(names(tdf)) if x in
           vcat(keys(DataMod.trace_keep_dict)..., keys(DataMod.trace_ud_keep_dict)...)]
 tdf = tdf[!, trcols]
 # #################################################################################
 
-# Merge TRACE and MERGENT DataFrames, run IG classifier 
+# Merge TRACE and MERGENT DataFrames, run IG classifier
 fdf, mdiag = @time DataMod.merge_trace_mergent_dfs(dto, tdf, mdf; mcols=[])
 # }}}
 # CREATE VARIABLES {{{1
 # IG Indicator, AGE and TTM, Trade Size Categories and ATS Indicator
 fdf = DataMod.create_stats_vars(fdf)
+
+# Trade Execution Quarter:
+fdf[:, :trd_exctn_qtr] = ceil.(fdf[:, :trd_exctn_mo] / 3.)
+
+# All US Corp Bonds Indicator
+fdf[:, :all_sample] = .&(fdf[!, :usd], fdf[!, :corp_bond])
 # }}}
 # SAVE RESULTS  {{{1
 # Path to Processed File
