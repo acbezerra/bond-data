@@ -3,8 +3,8 @@ using CSV
 using Distributed
 
 main_path = "/home/artur/BondPricing/bond-data"
-module_path = string(main_path, "/module")
-include(string(joinpath(module_path, "data_module"), ".jl"))
+modules_path = string(main_path, "modules")
+include(string(joinpath(modules_path, "data_module"), ".jl"))
 
 min_yr = 2013
 max_yr = 2019

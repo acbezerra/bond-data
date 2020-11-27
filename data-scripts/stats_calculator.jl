@@ -9,21 +9,21 @@ using DayCounts
 # using Distributed
 
 main_path = "/home/artur/BondPricing/bond-data"
-module_path = string(main_path, "/module")
+modules_path = string(main_path, "/modules")
 script_path = string(main_path, "/data-scripts")
-include(string(joinpath(module_path, "data_module"), ".jl"))
-include(string(joinpath(module_path, "stats_module"), ".jl"))
-include(string(joinpath(module_path, "plot_module"), ".jl"))
+include(string(joinpath(modules_path, "data_module"), ".jl"))
+include(string(joinpath(modules_path, "stats_module"), ".jl"))
+include(string(joinpath(modules_path, "plot_module"), ".jl"))
 
 # module StatsCal
 #     using DataFrames
 #     using Distributed
 #
 #     main_path = "/home/artur/BondPricing/bond-data"
-#     module_path = string(main_path, "/module")
+#     modules_path = string(main_path, "modules")
 #     script_path = string(main_path, "/data-scripts")
-#     include(string(joinpath(module_path, "data_module"), ".jl"))
-#     include(string(joinpath(module_path, "stats_module"), ".jl"))
+#     include(string(joinpath(modules_path, "data_module"), ".jl"))
+#     include(string(joinpath(modules_path, "stats_module"), ".jl"))
 #
 #     # Define Year and Quarter
 #     min_yr = 2016

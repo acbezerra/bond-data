@@ -10,10 +10,10 @@ main_path = "/home/artur/BondPricing/bond-data"
 scripts_path = string(main_path, "/data-scripts/plots")
 plt_dir = "plots"
 
-module_path = string(main_path, "/module")
-include(string(joinpath(module_path, "data_module"), ".jl"))
-include(string(joinpath(module_path, "stats_module"), ".jl"))
-include(string(joinpath(module_path, "plot_module"), ".jl"))
+modules_path = string(main_path, "modules")
+include(string(joinpath(modules_path, "data_module"), ".jl"))
+include(string(joinpath(modules_path, "stats_module"), ".jl"))
+include(string(joinpath(modules_path, "plot_module"), ".jl"))
 
 # Common Parameters {{{1
 row_var="sum_num_cov"
@@ -436,7 +436,7 @@ if :period in Symbol.(names(tt))
     title[end] = string(title[end], " - ", tt[1, :period])
 end
 
-include(string(joinpath(module_path, "plot_module"), ".jl"))
+include(string(joinpath(modules_path, "plot_module"), ".jl"))
 include(string(scripts_path, "/", "dual_vega_plt_script.jl"))
 push!(pl, p)
 # }}}
@@ -585,7 +585,7 @@ if :period in Symbol.(names(tt))
     title[end] = string(title[end], " - ", tt[1, :period])
 end
 
-include(string(joinpath(module_path, "plot_module"), ".jl"))
+include(string(joinpath(modules_path, "plot_module"), ".jl"))
 include(string(scripts_path, "/", "dual_vega_plt_script.jl"))
 push!(pl, p)
 # }}}

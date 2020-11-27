@@ -8,9 +8,9 @@ using Revise
 using Distributed
 
 main_path = "/home/artur/BondPricing/bond-data"
-module_path = string(main_path, "/module")
+modules_path = string(main_path, "/modules")
 script_path = string(main_path, "/data-scripts")
-include(string(joinpath(module_path, "data_module"), ".jl"))
+include(string(joinpath(modules_path, "data_module"), ".jl"))
 
 ENV["LINES"] = 100
 ENV["COLUMNS"] = 1000
@@ -20,7 +20,7 @@ ENV["COLUMNS"] = 1000
 # WebIO.install_jupyter_serverextension()
 # WebIO.install_jupyter_nbextension()
 
-include(string(joinpath(module_path, "data_module"), ".jl"))
+include(string(joinpath(modules_path, "data_module"), ".jl"))
 dto = DataMod.data_obj_constructor()
 # %%
 # mdf = @time DataMod.get_mergent_fisd_df(dto;
@@ -36,7 +36,7 @@ first(mdf, 5)
 
 
 # %% Step 1 - Get MERGENT Filtered Dataset #####################################
-include(string(joinpath(module_path, "data_module"), ".jl"))
+include(string(joinpath(modules_path, "data_module"), ".jl"))
 # Making re-computing optional.
 load_mdf = true
 
@@ -86,12 +86,12 @@ mdf2 = @time DataMod.load_mergent_filtered_df(dto; drop_cols=true)
 # most recent values of the other variables.
 
 # %%
-include(string(joinpath(module_path, "data_module"), ".jl"))
+include(string(joinpath(modules_path, "data_module"), ".jl"))
 @time include(string(script_path, "/merge_trace_mergent.jl"))
 first(fdf, 5)
 
 # %%
-include(string(joinpath(module_path, "data_module"), ".jl"))
+include(string(joinpath(modules_path, "data_module"), ".jl"))
 # Form combinations of ATS., IG and COVENANT filters
 combdf =  DataMod.get_filter_combinations()
 # Select cols and create smk indicator variable:
@@ -220,7 +220,7 @@ tab2[:, 2:end]
 
 
 # %%
-include(string(joinpath(module_path, "data_module"), ".jl"))
+include(string(joinpath(modules_path, "data_module"), ".jl"))
 tmp = DataMod.stats_generator(ffdf, DataMod.dfrow2dict(combdf, 1))
 
 # %%
@@ -439,7 +439,7 @@ tmp[:, cols]
 repeat(DataFrame(comb), inner=size(df2, 1))
 
 # %%
-include(string(joinpath(module_path, "data_module"), ".jl"))
+include(string(joinpath(modules_path, "data_module"), ".jl"))
 cond = .&((fdf[:, :trd_exctn_yr] .- 2019) .< 1e-5,
           (fdf[:, :trd_exctn_mo] .- 4) .< 1e-5)
 dft = DataMod.smk_rt_cov_indicators(fdf[cond, :])
@@ -509,7 +509,7 @@ gd = groupby(df[:, cols],  groups)
                       nrow => :trd_count, :cusip_id => (x -> size(unique(x), 1)) => :cusips)
 
 # %%
-include(string(joinpath(module_path, "DataMod"), ".jl"))
+include(string(joinpath(modules_path, "DataMod"), ".jl"))
 dto = DataMod.trace_obj_constructor()
 combdf = DataMod.get_smk_rt_combinations()
 
@@ -630,7 +630,7 @@ cdf = @time stats_calculator(df, groups)
 # count(mdf[!, :TMP_CUSIP] != mdf[!, :COMPLETE_CUSIP])
 
 # %% ATS v.s. OTC
-include(string(joinpath(module_path, "DataMod"), ".jl"))
+include(string(joinpath(modules_path, "DataMod"), ".jl"))
 cdf = @time DataMod.trace_stats(fdf)
 
 
