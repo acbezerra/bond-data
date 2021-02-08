@@ -9,7 +9,7 @@ using DayCounts
 # using Distributed
 
 main_path = "/home/artur/BondPricing/bond-data"
-modules_path = string(main_path, "modules")
+modules_path = string(main_path, "/modules")
 script_path = string(main_path, "/data-scripts")
 include(string(joinpath(modules_path, "data_module"), ".jl"))
 

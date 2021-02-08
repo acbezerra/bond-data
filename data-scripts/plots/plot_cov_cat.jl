@@ -11,7 +11,7 @@ main_path = "/home/artur/BondPricing/bond-data"
 scripts_path = string(main_path, "/data-scripts/plots")
 plt_dir = "plots"
 
-modules_path = string(main_path, "modules")
+modules_path = string(main_path, "/modules")
 include(string(joinpath(modules_path, "data_module"), ".jl"))
 include(string(joinpath(modules_path, "stats_module"), ".jl"))
 include(string(joinpath(modules_path, "plot_module"), ".jl"))
@@ -50,6 +50,7 @@ height=350
 save_plt=true
 plt_type = "cov_cat"
 file_ext="png"
+small_trades=false
 # }}}1
 pl = [ ]
 
@@ -311,6 +312,66 @@ end
 
 include(string(scripts_path, "/", "single_vega_plt_script.jl"))
 push!(pl, p)
+# }}}2
+# SMALL TRADES {{{2
+compute_small_trd_stats=true
+if @isdefined small_scc
+    println("Computing Trade Count Statistics for Small Trades")
+else
+    println("Missing Small Trades DataFrame. Skipping Small Trades plots...")
+end
+if compute_small_trd_stats
+    small_trades=true
+    tt = PlotMod.prepare_cat_plot(small_scc; stat=stats_var)
+    rt_tt = PlotMod.get_ats_otc_diffs_by_rt(small_scc, stats_var)
+
+    color_scale="viridis"
+    cal_formula=""
+    x_var="sbm:n"
+    x_var_type="nominal"
+    x_axis_title=" "
+    legend_title="Secondary Market"
+
+# Trade Percentage Count by Secondary Bond Market {{{3
+    y_var="perc_sbm_total"
+    y_axis_title="% of Total Small Trades Count"
+    title=["Non-MTN-Bond Small Trades by Covenant Category as a Percentage of the ",
+           string("Total Non-MTN-Bond Small Trades Count ",
+                  "by Secondary Bond Market")]
+    if :period in Symbol.(names(tt))
+        title[end] = string(title[end], " - ", tt[1, :period])
+    end
+
+    include(string(scripts_path, "/", "single_vega_plt_script.jl"))
+    push!(pl, p)
+# }}}3
+# Trade Count Percentage Diff by Secondary Market {{{3
+    tt = deepcopy(rt_tt[rt_tt[:, :sbm] .== :otc, :])
+
+    color_scale="bluepurple"
+
+    cal_formula = ""
+    cal_legend="Secondary Bond Market"
+    cal_var=:sbm
+    x_var="rt:n"
+    x_var_type="nominal"
+    legend_title="Rating"
+    #height=250
+
+    y_var="perc_diff"
+    y_axis_title="% Difference in Small Trades Count"
+    title=["ATS v.s. OTC % Difference in Rating-Contingent Small Trades " ,
+           "Count of Non-MTN-Bonds by Covenant Category"]
+    if :period in Symbol.(names(tt))
+        title[end] = string(title[end], " - ", tt[1, :period])
+    end
+
+    include(string(scripts_path, "/", "single_vega_plt_script.jl"))
+    push!(pl, p)
+# }}}3
+# Done with Small Trades
+    small_trades=false
+end
 # }}}2
 end
 # }}}1

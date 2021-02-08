@@ -4,13 +4,13 @@ using DataFrames
 using CSV
 # using Distributed
 # using ImageMagick
-using VegaLite 
+using VegaLite
 
 main_path = "/home/artur/BondPricing/bond-data"
 scripts_path = string(main_path, "/data-scripts/plots")
 plt_dir = "plots"
 
-modules_path = string(main_path, "modules")
+modules_path = string(main_path, "/modules")
 include(string(joinpath(modules_path, "data_module"), ".jl"))
 include(string(joinpath(modules_path, "stats_module"), ".jl"))
 include(string(joinpath(modules_path, "plot_module"), ".jl"))
@@ -23,7 +23,7 @@ row_var_title="Number of Covenant Categories per Bond"
 col_var="sum_num_cov"
 col_var_type="ordinal"
 col_sort="ascending"
-col_title="Number of Covenant Categories per Bond" 
+col_title="Number of Covenant Categories per Bond"
 
 x_var="sbm:n"
 x_var_type="nominal"
@@ -140,11 +140,11 @@ row_var="sbm2"
 # row_var_type="nominal"
 # row_var_title="Secondary Bond Market"
 
-row_var_title="% of Rating- & Market-Contingent Issuers" 
+row_var_title="% of Rating- & Market-Contingent Issuers"
 y_var="perc_sbm_rt_total"
 y_axis_title=""
 # y_axis_title="% of Total Trade Volume by Secondary Market"
-title=["Rating- and Secondary-Market-Contingent Share of Issuers Non-MTN-Bond", 
+title=["Rating- and Secondary-Market-Contingent Share of Issuers Non-MTN-Bond",
        " by Number of Covenant Categories per Bond"]
 if :period in Symbol.(names(tt))
     title[end] = string(title[end], " - ", tt[1, :period])
@@ -283,11 +283,11 @@ row_var="sbm2"
 # row_var_type="nominal"
 # row_var_title="Secondary Bond Market"
 
-row_var_title="% of Rating- & Market-Contingent Trades" 
+row_var_title="% of Rating- & Market-Contingent Trades"
 y_var="perc_sbm_rt_total"
 y_axis_title=""
 # y_axis_title="% of Total Trade Volume by Secondary Market"
-title=["Rating- and Secondary-Market-Contingent Share of Trades Non-MTN-Bond", 
+title=["Rating- and Secondary-Market-Contingent Share of Trades Non-MTN-Bond",
        " by Number of Covenant Categories per Bond"]
 if :period in Symbol.(names(tt))
     title[end] = string(title[end], " - ", tt[1, :period])
@@ -296,7 +296,7 @@ end
 include(string(scripts_path, "/", "dual_vega_plt_script.jl"))
 push!(pl, p)
 # }}}
-# Volume Percentage Diff by Secondary Market {{{2
+# Trade Count Percentage Diff by Secondary Market {{{2
 color_scale="bluepurple"
 
 cond = .&(df[:, :sbm] .== :ats, df[:, :rt] .!= :any)
@@ -325,8 +325,74 @@ end
 
 include(string(scripts_path, "/", "single_vega_plt_script.jl"))
 push!(pl, p)
-# }}}
-#}}}
+# }}}2
+# SMALL TRADES {{{2 
+compute_small_trd_stats=true
+if @isdefined small_snc
+    println("Computing Trade Count Statistics for Small Trades")
+else
+    println("Missing Small Trades DataFrame. Skipping Small Trades plots...")
+end
+if compute_small_trd_stats
+    small_trades=true
+    df = PlotMod.prepare_num_cov_plot(small_snc; stat=stats_var)
+
+# Percentage Trade Count {{{3
+    color_scale="viridis"
+
+    cond = .&(df[:, :sbm] .!= :any, df[:, :rt] .== :any)
+    tt = df[cond, :]
+
+    x_var="sbm:n"
+    x_var_type="nominal"
+    legend_title="Secondary Market"
+
+    y_var="perc_sbm_total"
+    y_axis_title="Share of Small Trades"
+    title=["Secondary-Market-Contingent Share of Small Trades of Non-MTN-Bonds",
+           " by Number of Covenant Categories per Bond"]
+    if :period in Symbol.(names(tt))
+        title[end] = string(title[end], " - ", tt[1, :period])
+    end
+
+    include(string(scripts_path, "/", "single_vega_plt_script.jl"))
+    push!(pl, p)
+# }}}3
+# Trade Count Percentage Diff by Secondary Market {{{3
+    color_scale="bluepurple"
+
+    cond = .&(df[:, :sbm] .== :ats, df[:, :rt] .!= :any)
+    ats_vol  = df[cond, :perc_sbm_rt_total]
+
+    cond = .&(df[:, :sbm] .== :otc, df[:, :rt] .!= :any)
+    otc_vol = df[cond, :perc_sbm_rt_total]
+    tt  = df[cond, :]
+    tt[!, :diff] = ats_vol - otc_vol
+
+    cal_formula = ""
+    cal_legend="Secondary Bond Market"
+    cal_var=:sbm
+    x_var="rt:n"
+    x_var_type="nominal"
+    legend_title="Rating"
+    #height=250
+
+    y_var="diff"
+    y_axis_title="% Diff in the Number of Small Trades"
+    title=["ATS v.s. OTC % Difference in Rating- Contingent Number of" ,
+           "Non-MTN-Bond Small Trades by Number of Covenant Categories per Bond"]
+    if :period in Symbol.(names(tt))
+        title[end] = string(title[end], " - ", tt[1, :period])
+    end
+
+    include(string(scripts_path, "/", "single_vega_plt_script.jl"))
+    push!(pl, p)
+# }}}3
+# Done with Small Trades
+    small_trades=false
+end
+# }}}2
+# }}}1
 # Bonds {{{1
 stats_var=:bonds
 df = PlotMod.prepare_num_cov_plot(snc; stat=stats_var)
@@ -426,11 +492,11 @@ row_var="sbm2"
 # row_var_type="nominal"
 # row_var_title="Secondary Bond Market"
 
-row_var_title="% of Rating- & Market-Contingent Issuers" 
+row_var_title="% of Rating- & Market-Contingent Issuers"
 y_var="perc_sbm_rt_total"
 y_axis_title=""
 # y_axis_title="% of Total Trade Volume by Secondary Market"
-title=["Rating- and Secondary-Market-Contingent Share of Non-MTN Bonds", 
+title=["Rating- and Secondary-Market-Contingent Share of Non-MTN Bonds",
        " by Number of Covenant Categories per Bond"]
 if :period in Symbol.(names(tt))
     title[end] = string(title[end], " - ", tt[1, :period])
@@ -496,7 +562,7 @@ include(string(scripts_path, "/", "single_vega_plt_script.jl"))
 push!(pl, p)
 # }}}
 # Share of Total Volume by SBM {{{2
-color_scale = "viridis" 
+color_scale = "viridis"
 
 cond = .&(df[:, :sbm] .!= :any, df[:, :rt] .== :any)
 tt  = df[cond, :]
@@ -575,11 +641,11 @@ row_var="sbm2"
 # row_var_type="nominal"
 # row_var_title="Secondary Bond Market"
 
-row_var_title="% of Rating- & Market-Contingent Trade Volume" 
+row_var_title="% of Rating- & Market-Contingent Trade Volume"
 y_var="perc_sbm_rt_total"
 y_axis_title=""
 # y_axis_title="% of Total Trade Volume by Secondary Market"
-title=["Rating- and Secondary-Market-Contingent Share of Total Non-MTN-Bond Trade Volume", 
+title=["Rating- and Secondary-Market-Contingent Share of Total Non-MTN-Bond Trade Volume",
        " by Number of Covenant Categories per Bond"]
 if :period in Symbol.(names(tt))
     title[end] = string(title[end], " - ", tt[1, :period])
