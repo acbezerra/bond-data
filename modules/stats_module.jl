@@ -139,17 +139,17 @@ function smk_rt_cov_indicators(x)
     vc = x[:, :covenant]
     vv = x[:, :entrd_vol_qt]
 
-    df2 = DataFrame(:ats_vol => sip(va, vv), 
+    df2 = DataFrame(:ats_vol => sip(va, vv),
                     :otc_vol => sip(.!va, vv),
                     :ats_ig_vol => sip(va, vi, vv),
                     :ats_hy_vol => sip(va, .!vi, vv),
                     :otc_ig_vol => sip(.!va, vi, vv),
-                    :otc_hy_vol => sip(.!va, .!vi, vv), 
-                    :ats_cov_vol => sip(va, vc, vv), 
+                    :otc_hy_vol => sip(.!va, .!vi, vv),
+                    :ats_cov_vol => sip(va, vc, vv),
                     :ats_ncov_vol => sip(va, .!vc, vv),
-                    :otc_cov_vol => sip(.!va, vc, vv), 
+                    :otc_cov_vol => sip(.!va, vc, vv),
                     :otc_ncov_vol => sip(.!va, .!vc, vv),
-                    :ig_cov_vol => sip(vi, vc, vv), 
+                    :ig_cov_vol => sip(vi, vc, vv),
                     :hy_cov_vol => sip(.!vi, vc, vv),
                     :ig_ncov_vol => sip(vi, .!vc, vv),
                     :hy_ncov_vol => sip(.!vi, .!vc, vv))
@@ -277,19 +277,19 @@ function get_ind_vec(ft)
     vcat(fd[ft.sbm], fd[ft.rating], fd[ft.covenant])
 end
 
-function get_filter_comb(x1::Symbol, x2::Symbol, x3::Symbol; 
+function get_filter_comb(x1::Symbol, x2::Symbol, x3::Symbol;
                          co::Array{Symbol,1}=[:ats, :otc, :ig, :hy, :cov, :ncov])
     values = get_ind_vec(filter_constructor(x1, x2, x3))
 
     return DataFrame([co[i] => values[i] for i in 1:size(co, 1)])
-end 
+end
 
 function get_filter_combinations(; co::Array{Symbol,1}=[:ats, :otc, :ig, :hy, :cov, :ncov])
     avals = [:any, :ats, :otc, :both] # for secondary bond market
     vals = [:any, :y, :n] # for ig, covenant, convertible
 
     return vcat([get_filter_comb(x1, x2, x3; co=co) for x1 in avals, x2 in vals, x3 in vals]...)[:, co]
-end 
+end
 
 function dfrow2dict(df::DataFrame, row::Int64)
     cols = [x for x in Symbol.(names(df)) if !(x in [:sbm, :rt, :cvt])]
@@ -315,37 +315,37 @@ function get_filter_cond(df::DataFrame, x::Dict{Symbol,Int64})
 end
 # }}}2
 # By Number of Covenants {{{2
-function get_combination(sbm::Symbol, rt::Symbol; 
+function get_combination(sbm::Symbol, rt::Symbol;
                          combdf::DataFrame=DataFrame())
 
     if isempty(combdf)
         combdf =  StatsMod.get_filter_combinations()
     end
-    
+
     id_cols = [:sbm, :rt, :cvt]
     if any([!(x in Symbol.(names(combdf))) for x in id_cols])
         combdf = StatsMod.gen_sbm_rt_cvt_cat_vars(combdf)
     end
-    
-    row = argmax(.&(combdf[:, :sbm] .== sbm, 
-                    combdf[:, :rt] .== rt, 
+
+    row = argmax(.&(combdf[:, :sbm] .== sbm,
+                    combdf[:, :rt] .== rt,
                     combdf[:, :cvt] .== :any))
-    
+
     cols = [x for x in Symbol.(names(combdf)) if !(x in id_cols)]
     return StatsMod.dfrow2dict(combdf[:, cols], row)
 end
 
-function stats_by_num_cov(df;     
+function stats_by_num_cov(df;
                       groupby_date_cols::Array{Symbol,1}=[:trd_exctn_yr, :trd_exctn_qtr])
     stats_cols = vcat(groupby_date_cols, :sbm, :rt, :cusip_id, :sum_num_cov)
     gdf1 = unique(df[:, stats_cols])
-    df1 = combine(groupby(df, vcat(groupby_date_cols, :sbm, :rt)), 
+    df1 = combine(groupby(df, vcat(groupby_date_cols, :sbm, :rt)),
                   :sum_num_cov => (x -> Statistics.median(x)) => :median_num_cov,
                   :sum_num_cov => (x -> Statistics.mean(x)) => :mean_num_cov)
 
     gdf2 = groupby(df, vcat(groupby_date_cols, :sbm, :rt, :sum_num_cov))
-    df2 = combine(gdf2, 
-            # Volume Statistics: 
+    df2 = combine(gdf2,
+            # Volume Statistics:
             :entrd_vol_qt => (x -> Statistics.mean(skipmissing(x))) => :mean_vol_by_num_cov,
             :entrd_vol_qt => (x -> Statistics.median(skipmissing(x))) => :median_vol_by_num_cov,
             :entrd_vol_qt => (x -> sum(skipmissing(x))/1e9) => :total_vol_by_num_cov,
@@ -354,7 +354,7 @@ function stats_by_num_cov(df;
             :cusip_id => (x -> size(x, 1)) => :trades_by_num_cov,
 
             # Number of Bonds:
-            :cusip_id => (x -> size(unique(x), 1)) => :bonds_by_num_cov, 
+            :cusip_id => (x -> size(unique(x), 1)) => :bonds_by_num_cov,
 
             # Number of issuers:
             :ISSUER_ID => (x -> size(unique(x), 1)) => :issuers_by_num_cov)
@@ -363,13 +363,21 @@ function stats_by_num_cov(df;
                  vcat(groupby_date_cols, :sbm, :sum_num_cov))
 end
 
-function compute_stats_by_num_cov(df::DataFrame, sbm::Symbol, rt::Symbol, combdf::DataFrame)
+function compute_stats_by_num_cov(df::DataFrame, sbm::Symbol,
+                                  rt::Symbol, combdf::DataFrame;
+                                  small_trades::Bool=false,
+                                  small_trd_thrsd::Float64=1e5)
     combd = get_combination(sbm, rt; combdf=combdf)
-    tmp =  deepcopy(df[StatsMod.get_filter_cond(df, combd), :])
-    tmp[!, :sbm] .= sbm
-    tmp[!, :rt] .= rt
-    
-    return StatsMod.stats_by_num_cov(tmp)
+    tmpdf =  deepcopy(df[get_filter_cond(df, combd), :])
+    tmpdf[!, :sbm] .= sbm
+    tmpdf[!, :rt] .= rt
+
+    if small_trades
+        cond = tmpdf[:, :entrd_vol_qt] .<= small_trd_thrsd
+        tmpdf = tmpdf[cond, :]
+    end
+
+    return StatsMod.stats_by_num_cov(tmpdf)
 end
 # }}}2
 # By Covenant Categories {{{2
@@ -377,24 +385,24 @@ function filter_selected(df::DataFrame;
                          date_cols::Array{Symbol, 1}=[:trd_exctn_yr, :trd_exctn_qtr],
                          extra_cols::Array{Symbol, 1}=Symbol[])
     bond_cols = [:ISSUER_ID, :cusip_id]
-    filter_cols = vcat([:ats, :ig, :covenant], 
+    filter_cols = vcat([:ats, :ig, :covenant],
                        [Symbol(x) for x in names(df) if occursin("cg", x)])
     trd_cols = [:entrd_vol_qt]
     cols = vcat(date_cols, bond_cols, filter_cols, trd_cols, extra_cols)
 
-    # Keep only the selected securities 
-    df = df[df[:selected], cols]
+    # Keep only the selected securities
+    df = df[df[:, :selected], cols]
 
     # Create indicator for bonds/issuers that trade
     # on both markets in the same period:
     colsl = vcat(date_cols, :cusip_id)
-    tmp = combine(groupby(df, colsl), 
+    tmp = combine(groupby(df, colsl),
                   :ats => (x -> .&(count(x) > 0, count(x .== false) > 0)) => :bond_ats_otc)
     df = innerjoin(df, tmp, on=colsl)
 
     colsl = vcat(date_cols, :ISSUER_ID)
-    tmp = combine(groupby(df, colsl), 
-                          :bond_ats_otc => (x -> count(x) > 0) => :issuer_ats_otc)   
+    tmp = combine(groupby(df, colsl),
+                          :bond_ats_otc => (x -> count(x) > 0) => :issuer_ats_otc)
     return innerjoin(df, tmp, on=colsl)
 end
 
@@ -411,10 +419,10 @@ end
 #     cgcols = [Symbol(:cg, x) for x in 1:15]
 #     cgvol(x) = sum(.*([getfield(x, col) for col in keys(x)]...))/1e9
 
-#     return combine(gdf, 
-#                    [cg => count => Symbol(cg, :_trd_count) for cg in cgcols], 
-#                    [Symbol(cg,  :_bonds) => (x -> size(unique(x[.!ismissing.(x)]), 1)) => Symbol(cg, :_bonds) for cg in cgcols], 
-#                    [Symbol(cg,  :_issuers) => (x -> size(unique(x[.!ismissing.(x)]), 1)) => Symbol(cg, :_issuers) for cg in cgcols], 
+#     return combine(gdf,
+#                    [cg => count => Symbol(cg, :_trd_count) for cg in cgcols],
+#                    [Symbol(cg,  :_bonds) => (x -> size(unique(x[.!ismissing.(x)]), 1)) => Symbol(cg, :_bonds) for cg in cgcols],
+#                    [Symbol(cg,  :_issuers) => (x -> size(unique(x[.!ismissing.(x)]), 1)) => Symbol(cg, :_issuers) for cg in cgcols],
 #                    [Symbol(cg,  :_trd_vol) => (x -> sum(x)/1e9) => Symbol(cg, :_trd_vol_tr) for cg in cgcols])
 # end
 
@@ -459,42 +467,52 @@ function cg_vol_stats_generator(gdf)
 
 
     f_mean(x) = !isempty(skipmissing(x)) ? Statistics.mean(skipmissing(x)) : NaN
-    f_median(x) = !isempty(skipmissing(x)) ? Statistics.median(skipmissing(x)) : NaN   
-    f_vol(x) = !isempty(skipmissing(x)) ? sum(skipmissing(x))/1e9 : NaN   
-    return combine(gdf, 
-        # Volume Statistics: 
-        [Symbol(cg, :_trd_vol) => (x -> f_mean(x))  => 
+    f_median(x) = !isempty(skipmissing(x)) ? Statistics.median(skipmissing(x)) : NaN
+    f_vol(x) = !isempty(skipmissing(x)) ? sum(skipmissing(x))/1e9 : NaN
+    return combine(gdf,
+        # Volume Statistics:
+        [Symbol(cg, :_trd_vol) => (x -> f_mean(x))  =>
             Symbol(cg, :_mean_trd_vol) for cg in cgcols],
-        [Symbol(cg, :_trd_vol) => (x -> f_median(x)) => 
+        [Symbol(cg, :_trd_vol) => (x -> f_median(x)) =>
             Symbol(cg, :_median_trd_vol) for cg in cgcols],
-        [Symbol(cg, :_trd_vol) => (x -> f_vol(x)) => 
+        [Symbol(cg, :_trd_vol) => (x -> f_vol(x)) =>
             Symbol(cg, :_trd_vol_tr) for cg in cgcols],
-        
+
         # Trade Count:
-        [cg => count => Symbol(cg, :_trd_count) for cg in cgcols], 
-        
+        [cg => count => Symbol(cg, :_trd_count) for cg in cgcols],
+
         # Number of Bonds:
-        [Symbol(cg,  :_bonds) => (x -> size(unique(x[.!ismissing.(x)]), 1)) => 
-            Symbol(cg, :_bonds) for cg in cgcols], 
-        
+        [Symbol(cg,  :_bonds) => (x -> size(unique(x[.!ismissing.(x)]), 1)) =>
+            Symbol(cg, :_bonds) for cg in cgcols],
+
         # Number of issuers:
-        [Symbol(cg,  :_issuers) => (x -> size(unique(x[.!ismissing.(x)]), 1)) => 
+        [Symbol(cg,  :_issuers) => (x -> size(unique(x[.!ismissing.(x)]), 1)) =>
             Symbol(cg, :_issuers) for cg in cgcols])
 end
 
 function stats_generator(df::DataFrame, combd::Dict{Symbol,Int64};
-                         groupby_date_cols::Array{Symbol, 1}=[:trd_exctn_yr, :trd_exctn_qtr])
+                         groupby_date_cols::Array{Symbol, 1}=[:trd_exctn_yr, :trd_exctn_qtr],
+                         small_trades::Bool=false,
+                         small_trd_thrsd::Float64=1e5)
     tmpdf = df[get_filter_cond(df, combd), :]
-    
+
+    if small_trades
+        cond = tmpdf[:, :entrd_vol_qt] .<= small_trd_thrsd
+        tmpdf = tmpdf[cond, :]
+    end
+
     cgcols = [Symbol(:cg, x) for x in 1:15]
     fx1(dummy, var) = dummy == true ? var : 0.0
     fx2(dummy, var) = dummy == true ? var : missing
     for cg in cgcols
-        tmpdf[!, Symbol(cg, :_trd_vol)] = fx1.(tmpdf[:, cg], tmpdf[:, :entrd_vol_qt])
-        tmpdf[!, Symbol(cg, :_bonds)] = fx2.(tmpdf[:, cg], tmpdf[:, :cusip_id])
-        tmpdf[!, Symbol(cg, :_issuers)] = fx2.(tmpdf[:, cg], tmpdf[:, :ISSUER_ID])
+        tmpdf[!, Symbol(cg, :_trd_vol)] = fx1.(tmpdf[:, cg],
+                                               tmpdf[:, :entrd_vol_qt])
+        tmpdf[!, Symbol(cg, :_bonds)] = fx2.(tmpdf[:, cg],
+                                             tmpdf[:, :cusip_id])
+        tmpdf[!, Symbol(cg, :_issuers)] = fx2.(tmpdf[:, cg],
+                                               tmpdf[:, :ISSUER_ID])
     end
-    
+
     gdf = groupby(tmpdf, groupby_date_cols)
 
     # Number of bonds and number of trades
@@ -576,11 +594,11 @@ function compute_stats(df, gbvars::Array{Symbol, 1};
                                                 :small_trade_volume,
                                                 :small_trade_volume_share])
 
-    # cf(df) = combine(df,  
+    # cf(df) = combine(df,
     #               # Number of Bonds
     #               :cusip_id => (x -> size(unique(x), 1)) => :bond_count,
     #               # Trade Count
-    #               nrow => :trade_count, 
+    #               nrow => :trade_count,
     #               # Trade Volume in USD tn
     #               :entrd_vol_qt => (x -> sum(x)/1e9) => :trade_volume)
 
@@ -600,7 +618,7 @@ function compute_stats(df, gbvars::Array{Symbol, 1};
 
     sdf = isempty(gbvars) ? cf(df) : sort!(cf(groupby(df, gbvars)), gbvars, rev=true)
 
-    
+
     for var in [:trade_count, :trade_volume]
         sdf[!, Symbol(:small_, var, :_share)] = (sdf[!, Symbol(:small_, var)]./sdf[!, var]).*100
     end
@@ -610,21 +628,21 @@ function compute_stats(df, gbvars::Array{Symbol, 1};
             sdf[!, col] .= 2
         end
     end
-    
+
     gbvars = [:ats, :ig, :covenant]
     for col in gbvars
         sdf[!, col] = Int64.(sdf[:, col])
     end
-    
+
     # Tags
     ts = tag_functions_constructor()
-    sdf[:, :sbm_rt_cov] = ts.tag.(Int64.(sdf[!, :ats]), 
-                                  Int64.(sdf[!, :ig]), 
+    sdf[:, :sbm_rt_cov] = ts.tag.(Int64.(sdf[!, :ats]),
+                                  Int64.(sdf[!, :ig]),
                                   Int64.(sdf[!, :covenant]))
 
     # Reorder columns:
     sdf = sdf[:, vcat(gbvars, :sbm_rt_cov, svars)]
-    
+
     return sdf
 end
 
@@ -641,7 +659,7 @@ function form_stats_table(sdf::DataFrame)
     df = df[:, Not([:ats, :ig, :covenant, :sbm_rt_cov, :cov])]
 
     # Reshape
-    df = unstack(stack(df, [:bond_count, :trade_count, :trade_volume]), 
+    df = unstack(stack(df, [:bond_count, :trade_count, :trade_volume]),
                 [:variable, :cr], :sbm, :value)
 
     # Compute Ratios
@@ -651,14 +669,14 @@ function form_stats_table(sdf::DataFrame)
 
     # Sort Data
     ff(x) = Dict(:ig => 0, :hy => 1, :all => 2)[x]
-    cols = [:variable, :cr, :ats, :otc, :all, 
+    cols = [:variable, :cr, :ats, :otc, :all,
             :ats_otc, :ats_total, :otc_total]
     return sort!(df, [:variable, order(:cr, by=ff)])[:, cols]
 end
 # }}}2
 # Small Trades Table {{{2
-function small_trades_df_reshaper(df::DataFrame; 
-                                  small_trades::Bool=true, 
+function small_trades_df_reshaper(df::DataFrame;
+                                  small_trades::Bool=true,
                                   abs_values::Bool=true)
     # Function to rename rows:
     rf(x) = join([x for x in split(string(x), "_") if !(x in ["small", "share"])], "_")
@@ -702,7 +720,7 @@ function small_trades_stats(sdf::DataFrame)
     tdf2 = small_trades_df_reshaper(df; small_trades=false, abs_values=true)
     tdf3 = small_trades_df_reshaper(df; small_trades=true, abs_values=false)
 
-    tdf = outerjoin(outerjoin(tdf1, tdf2; on = [:variable, :cr]), 
+    tdf = outerjoin(outerjoin(tdf1, tdf2; on = [:variable, :cr]),
                     tdf3; on = [:variable, :cr])
 
     # Reorder Columns
@@ -754,7 +772,7 @@ end
 # }}}2
 # }}}1
 # Storing and Retrieving the Results {{{1
-function save_stats_data(dto, df::DataFrame)
+function save_stats_data(dto, df::DataFrame; small_trades=false)
     stats_data_path = string(dto.main_path, "/", dto.data_dir, "/", dto.stats_dir)
     yr_dir = string(minimum(df[:, :trd_exctn_yr]))
     if !isdir(stats_data_path)
@@ -765,11 +783,11 @@ function save_stats_data(dto, df::DataFrame)
     end
 
     # Get date columns identifier
-    date_cols = [Symbol(x) for x in names(df) if 
+    date_cols = [Symbol(x) for x in names(df) if
                 any([occursin(y, x) for y in ["yr", "qtr", "mo"]])]
     fd(x) = occursin("yr", string(x)) ? "" : occursin("qtr", string(x)) ? :Q : :m
     dateid = Symbol([Symbol(fd(x), Int64(minimum(df[:, x]))) for x in date_cols]...)
-    
+
     # Type of Statistics
     # type 1: by number of covenants
     # type 2: by covenant category
@@ -779,7 +797,9 @@ function save_stats_data(dto, df::DataFrame)
         dftype =  "stats_by_cov_cat"
     end
 
-    fname = string(dateid, "_", dftype, ".csv")
+
+    stname = small_trades ? "_small_trades" : ""
+    fname = string(dateid, "_", dftype, stname, ".csv")
     println(" ")
     println("Filename: ", fname)
     println(" ")
@@ -799,7 +819,7 @@ function load_stats_data(dto, yr::Int64, qtr::Int64; stats_by_num_cov::Bool=true
     end
 
     dateid = Symbol(yr, :Q, qtr)
-    
+
     # Type of Statistics
     dftype = "stats_by_num_cov"
     if !stats_by_num_cov
@@ -827,49 +847,156 @@ end
 # Stats DataFrames {{{1
 # Stats by Covenant Categories
 function get_stats_by_cov_cat_df(dto, df::DataFrame;
-                                 date_cols::Array{Symbol, 1}=[:trd_exctn_yr, 
+                                 date_cols::Array{Symbol, 1}=[:trd_exctn_yr,
                                                                :trd_exctn_qtr],
+                                 small_trades::Bool=false,
+                                 small_trd_thrsd::Float64=1e5,
                                  save_data::Bool=true)
     combdf = get_filter_combinations()
 
     # Compute Stats
     @time dfl_qtr = fetch(@spawn [stats_generator(df,
                                    dfrow2dict(combdf, row);
-                                   groupby_date_cols=date_cols)
+                                   groupby_date_cols=date_cols,
+                                   small_trades=small_trades,
+                                  small_trd_thrsd=small_trd_thrsd)
                                   for row in 1:size(combdf, 1)])
     scc = sort(vcat(dfl_qtr...), names(combdf))
     scc = gen_sbm_rt_cvt_cat_vars(scc)
 
     if save_data
-        save_stats_data(dto, scc)
+        save_stats_data(dto, scc; small_trades=small_trades)
     end
 
     return scc
 end
 
-# Stats by Number of Covenants 
+# Stats by Number of Covenants {{{2
 function get_stats_by_num_cov_df(dto, df::DataFrame;
+                                 small_trades::Bool=false,
+                                 small_trd_thrsd::Float64=1e5,
                                  save_data::Bool=true)
 
     combdf = get_filter_combinations()
     combdf = gen_sbm_rt_cvt_cat_vars(combdf)
 
-    # Count the number of covenants in each bond: 
+    # Count the number of covenants in each bond:
     df[!, :sum_num_cov] .= sum([df[:, Symbol(:cg, x)] for x in 1:15])
 
     # Compute Stats
-    @time dfl = fetch(Distributed.@spawn [compute_stats_by_num_cov(df, 
-                                                      sbm, rt, combdf) for 
+    @time dfl = fetch(Distributed.@spawn [compute_stats_by_num_cov(df,
+                                            sbm, rt, combdf;
+                                            small_trades=small_trades,
+                                            small_trd_thrsd=small_trd_thrsd) for
                     sbm in [:any, :ats, :otc], rt in [:any, :ig, :hy]])
 
     snc = vcat(dfl...)
 
     if save_data
-        save_stats_data(dto, snc)
+        save_stats_data(dto, snc; small_trades=small_trades)
     end
-    
+
     return snc
 end
-# }}}1
+
+function num_cov_filter_df(df::DataFrame, var::Symbol, sbm::Array{Symbol,1};
+                  rt::Array{Symbol,1}=[:any],
+                  yr::Int64=0,
+                  qtr::Int64=0)
+
+    # Check Year
+    if yr == 0
+        yr = unique(df[:, :trd_exctn_yr])[1]
+        if size(unique(df[:, :trd_exctn_yr]), 1) > 1
+            println("Attention! More than one year in the data! Selecting year: ", yr)
+        end
+    end
+
+    # Check quarter
+    if qtr == 0
+        cond = abs.(df[:, :trd_exctn_yr] .- yr) .< 1e-5
+        qtr = unique(df[cond, :trd_exctn_qtr])[1]
+        if size(unique(df[cond, :trd_exctn_yr]), 1) > 1
+            println("Attention! More than one quarter in the data! Selecting quarter: ", yr)
+        end
+    end
+
+    # Select Year, Quarter, Credit Rating and Secondary Bond Market:
+    filter_cond = .&(abs.(df[:, :trd_exctn_yr] .- yr) .< 1e-5,
+                     abs.(df[:, :trd_exctn_qtr] .- qtr) .< 1e-5,
+                     in(rt).(df[:, :rt]),
+                     in(sbm).(df[:, :sbm]))
+
+    # Select Columns
+    cols = vcat([:trd_exctn_yr, :trd_exctn_qtr, :sbm, :rt, :sum_num_cov],
+                [Symbol(x) for x in names(df) if occursin(string(var), x)])
+
+    # Filter
+    return df[filter_cond, cols]
 end
 
+function num_cov_filter_groups(df::DataFrame, var::Symbol;
+                               sbm_vec::Array{Symbol, 1}=[:any],
+                               rt_vec::Array{Symbol, 1}=[:any],
+                               min_num_cov::Int64=5,
+                               max_num_cov::Int64=9)
+
+
+    # GROUP SBM: Select ATS, OTC or ANY
+    sbm_cond(x, sbm) = x[:, :sbm] .== sbm
+
+    # GROUP RT: Select IG, HY or ANY
+    rt_cond(x, rt) = x[:, :rt] .== rt
+
+    # Group SBM+RT
+    sbm_rt_cond(x, sbm, rt) = .&(sbm_cond(x, sbm), rt_cond(x, rt))
+
+    # Mininum and Maximum Number of Covenant Categories
+    num_cov_cond(x, min_num_cov, max_num_cov) = .&(x[:, :sum_num_cov] .>= min_num_cov,
+                                                   x[:, :sum_num_cov] .<= max_num_cov)
+
+    # GROUP SBM+RT+NUM_COV: SBM + RT + Covenant Categories Bounds
+    sbm_rt_cov_cond(x, sbm, rt, min_num_cov, max_num_cov) = .&(sbm_rt_cond(x, sbm, rt),
+                                                               num_cov_cond(x, min_num_cov, max_num_cov))
+
+    # Get Share of GROUP SBM+RT+NUM_COV w.r.t Total in GROUP SBM+RT
+    tmpf(x, varname, sbm, rt, min_num_cov, max_num_cov) = sum(x[sbm_rt_cov_cond(x, sbm, rt, min_num_cov, max_num_cov),
+                                                                varname])/sum(x[sbm_rt_cond(x, sbm, rt), varname])
+
+    # # Compute Shares for each SBM
+    # tmpf2(x, varname, sbm_vec, rt_vec, min_num_cov, max_num_cov) = [tmpf(x, varname, sbm, rt, min_num_cov, max_num_cov)
+    #                                                                 for sbm in sbm_vec, rt in rt_vec]
+
+    varname=Symbol(var, :_by_num_cov)
+    df2 = DataFrame()
+    for sbm in sbm_vec
+        for rt in rt_vec
+            tmp = combine(x -> tmpf(x, varname, sbm, rt, min_num_cov, max_num_cov), df)
+            rename!(tmp, [Symbol(var, :_share)])
+            tmp[:, :sbm] .= sbm
+            tmp[:, :rt] .= rt
+            df2 = vcat(df2, tmp)
+        end
+    end
+
+    return df2
+end
+
+function num_cov_get_shares(df::DataFrame, var::Symbol;
+                    sbm_vec::Array{Symbol, 1}=[:any],
+                    rt_vec::Array{Symbol, 1}=[:any],
+                    min_num_cov::Int64=5,
+                    max_num_cov::Int64=9)
+
+    # Filter DataFrame on Secondary Bond Market and Credit Rating
+    tmp = num_cov_filter_df(df, var, sbm_vec; rt=rt_vec)
+
+    # Compute Shares
+    df2 = num_cov_filter_groups(tmp, var; sbm_vec=sbm_vec, rt_vec=rt_vec,
+                                min_num_cov=min_num_cov, max_num_cov=max_num_cov)
+
+    return df2
+end
+# }}}2
+# }}}1
+end

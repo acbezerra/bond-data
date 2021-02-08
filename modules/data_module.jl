@@ -16,10 +16,10 @@ data_dir="data"
 filter_file_prefix="filtered"
 
 # TRACE Data Inputs
-include(string(main_path, "/module/trace_inputs.jl"))
+include(string(main_path, "/modules/trace_inputs.jl"))
 
 # MERGENT FISD Data Inputs
-include(string(main_path, "/module/mergent_inputs.jl"))
+include(string(main_path, "/modules/mergent_inputs.jl"))
 
 # Merged Datasets
 merged_dir="MERGED"
@@ -96,24 +96,24 @@ function data_obj_constructor(; main_path::String=main_path,
   trace_path = string(main_path, "/", data_dir, "/", trace_dir)
   mergent_path = string(main_path, "/", data_dir, "/", mergent_dir)
 
-  tr = trace_obj(trace_dir, trace_path, 
+  tr = trace_obj(trace_dir, trace_path,
                  raw_files_dir, pre_proc_dir,
                  proc_dir, filter_dir,
                  trace_file_prefix, cancel_trd_file_prefix,
                  reverse_trd_file_prefix, original_trd_file_prefix,
-                 proc_file_prefix, filter_file_prefix, 
+                 proc_file_prefix, filter_file_prefix,
                  cancel_df_cols, rev_df_cols, trace_cols_dict)
 
-  mf = mergent_obj(mergent_dir, 
+  mf = mergent_obj(mergent_dir,
                    mergent_path,
-                   mergent_file_prefix,    
-                   filter_file_prefix, 
+                   mergent_file_prefix,
+                   filter_file_prefix,
                    mergent_cols_dict)
 
-  return data_obj(main_path, data_dir, 
+  return data_obj(main_path, data_dir,
                   merged_dir, stats_dir,
                   merged_file_prefix,
-                  tr, mf) 
+                  tr, mf)
 end
 # }}}1
 # TRACE {{{1
@@ -661,7 +661,7 @@ function load_mergent_filtered_df(dto; drop_cols::Bool=true)
     # Get Column Types ======================================================
     dfcl = names(DataFrame!(CSV.File(fpath_name; limit=1)))       # column names
     # Exclude user-defined boolean columns
-    bool_cols = [x for x in user_defined_keep if x != :rating_date] 
+    bool_cols = [x for x in user_defined_keep if x != :rating_date]
     # Remaining columns
     rdfcl = [x for x in dfcl if !(x in bool_cols)]
     # Get types of remaining columns
@@ -669,7 +669,7 @@ function load_mergent_filtered_df(dto; drop_cols::Bool=true)
     # Collect all types:
     colsd = merge!(colsd, Dict{String, DataType}([string(x) => Bool for x in bool_cols]))
     # =======================================================================
-    
+
     println(string("Loading mergent_",  dto.mf.filter_file_prefix, " dataframe..."))
     mdf = DataFrame!(CSV.File(fpath_name, types=colsd))
 
@@ -681,9 +681,9 @@ function load_mergent_filtered_df(dto; drop_cols::Bool=true)
     end
 
     if drop_cols
-        cols = [x for x in DataMod.mergent_vars_keep if 
-                !(x in vcat(DataMod.bondh_prot_cols, 
-                            DataMod.convertible_cols, 
+        cols = [x for x in DataMod.mergent_vars_keep if
+                !(x in vcat(DataMod.bondh_prot_cols,
+                            DataMod.convertible_cols,
                             DataMod.convertible_add_cols))]
         mdf = mdf[:, cols]
     end
@@ -878,7 +878,7 @@ function compute_trade_size_cats(df::DataFrame)
     df[!, :volg5] .= .&(df[:, :entrd_vol_qt] .> upper_vec[4],
                         df[:, :entrd_vol_qt] .<= upper_vec[5])
     df[!, :volg6] .= df[:, :entrd_vol_qt] .> upper_vec[5]
-    
+
     return df
 end
 # }}}2
@@ -909,8 +909,8 @@ function cov_cond(df::DataFrame, var::Symbol)
                       :VOTING_POWER_PERCENTAGE,
                       :DECLINING_NET_WORTH_PROVISIONS,
                       :VOTING_POWER_PERCENTAGE_ERP,
-                      :LEVERAGE_TEST_SUB, 
-                      :DECLINING_NET_WORTH_PERCENTAGE, 
+                      :LEVERAGE_TEST_SUB,
+                      :DECLINING_NET_WORTH_PERCENTAGE,
                       :DECLINING_NET_WORTH_TRIGGER]
     nonboolcov_num = [ ]
 
@@ -929,7 +929,7 @@ function covgr_indicators(df::DataFrame)
         col = Symbol(:cg, grn)
         vars = [x for x in keys(vars2covgr) if vars2covgr[x] == grn]
 
-        df[!, col] = .|([cov_cond(df, var) for var in vars]...)    
+        df[!, col] = .|([cov_cond(df, var) for var in vars]...)
     end
 
     return df
