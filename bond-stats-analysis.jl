@@ -297,6 +297,55 @@ snc = StatsMod.load_stats_data(dto, yr, qtr; stats_by_num_cov=true)
 # ADD LOAD OF SMALL TRADES DATAFRAMES
 first(scc, 5)
 
+
+# %%
+function get_weighted_stats(df::DataFrame, weight_var::Symbol, sbm::Symbol, rt::Symbol)
+        cond = .&(df[:, :sbm] .== sbm, df[:, :rt] .== rt)
+        var = occursin("vol", string(weight_var)) ? :total_vol_by_num_cov : :trades_by_num_cov
+        variable = occursin("vol", string(weight_var)) ? :trd_volume : :trd_count
+
+        weighted_mean_fun(x, w) = sum(x .* w)/sum(w)
+        weighted_std_fun(x, w) = (sum(w .* (x .- weighted_mean_fun(x, w)).^2)/(((size(x, 1) - 1)/size(x, 1)) * sum(w))).^(.5)
+
+        # Number of Covenants
+        x = df[cond, :sum_num_cov]
+
+        # Weights
+        w = df[cond, var]./sum(df[cond, var])
+
+        # Weighted Mean
+        weighted_mean_num_cov = weighted_mean_fun(x, w)
+
+        # Weighted Standard Deviation
+        weighted_std_num_cov = weighted_std_fun(x, w)
+
+        return DataFrame(Dict(:sbm => sbm, :rt => rt,
+                              :var => variable,
+                              :weighted_mean => weighted_mean_num_cov,
+                              :weighted_std => weighted_std_num_cov))
+end
+
+function get_weighted_stats_table(df::DataFrame;
+                                  weight_vars::Array{Symbol, 1}=[:trades_by_num_cov, :total_vol_by_num_cov],
+                                  sbm_vec::Array{Symbol, 1}=[:any, :ats, :otc],
+                                  rt_vec::Array{Symbol, 1}=[:any, :ig, :hy])
+
+        res_vec = fetch(@spawn [get_weighted_stats(df, w, sbm, rt)
+                                for w in weight_vars, sbm in sbm_vec, rt in rt_vec])
+
+        cols = [:var, :sbm, :rt, :weighted_mean, :weighted_std]
+        return sort!(vcat(res_vec...)[:, cols], [:var, :sbm, :rt])
+end
+
+# %%
+res = get_weighted_stats_table(snc)
+
+cond = .&(res[:, :sbm] .!= :any, res[:, :rt] .!= :any)
+stdf = stack(res[cond, :], Not([:var, :sbm, :rt]))
+df2 = unstack(stdf, :sbm, :value)
+df2[:, :diff] = df2[:, :ats] .- df2[:, :otc]
+df2
+
 # %% Compute the share of bonds/trades/total volume featuring
 # from 5 to 8 distinct covenant categories:
 sbm_vec=unique(snc[:, :sbm])
