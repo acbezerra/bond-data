@@ -845,7 +845,7 @@ function load_stats_data(dto, yr::Int64, qtr::Int64; stats_by_num_cov::Bool=true
 end
 # }}}1
 # Stats DataFrames {{{1
-# Stats by Covenant Categories
+# Stats by Covenant Categories {{{2
 function get_stats_by_cov_cat_df(dto, df::DataFrame;
                                  date_cols::Array{Symbol, 1}=[:trd_exctn_yr,
                                                                :trd_exctn_qtr],
@@ -870,7 +870,7 @@ function get_stats_by_cov_cat_df(dto, df::DataFrame;
 
     return scc
 end
-
+# }}}2
 # Stats by Number of Covenants {{{2
 function get_stats_by_num_cov_df(dto, df::DataFrame;
                                  small_trades::Bool=false,
